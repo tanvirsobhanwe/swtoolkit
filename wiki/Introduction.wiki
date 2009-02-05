@@ -1,0 +1,24 @@
+#summary Introduction to Software Construction Toolkit
+
+= Introduction =
+
+What is the Software Construction Toolkit?
+  * A toolkit for building applications.
+  * Open-source, so you can use it for building open-source products.
+  * Based on the open-source SCons build tool.
+    * Written in python; easily extended by writing tool modules.
+    * Documented.
+    * Tested.
+    * Your friend!
+
+A sample of features:
+  * Build Windows, Linux, Mac desktop platforms with a single set of build files.
+  * Support for parallel (multi-processor) builds on all platforms.
+  * Support for distributed builds via distcc and Incredibuild.
+  * Generate Visual Studio solution and project files.
+
+Why is the only tool in the toolkit a hammer?
+  * If you have a hammer, what other tools do you need?
+  * Once you start using it, everything looks like a nail - it's flexible enough you want to use it for all your build needs.
+  * Getting hammered is just as much fun for project builds as it is for developers.
+  * Because typing 'software_construction_toolkit.bat' would be too painful.
