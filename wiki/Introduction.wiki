@@ -1,7 +1,5 @@
 #summary Introduction to Software Construction Toolkit
 
-= Introduction =
-
 What is the Software Construction Toolkit?
   * A toolkit for building applications.
   * Open-source, so you can use it for building open-source products.
