@@ -18,7 +18,7 @@ For general SCons environment variables and methods see:
 
 = Global Methods and Variables =
 
-== !AddSiteDir() ==
+== !AddSiteDir ==
 Add a site directory, as if passed to the --site-dir option.
 
 Usage: `AddSiteDir(site_dir)`
@@ -38,7 +38,7 @@ Example:
 AddSiteDir('$SOURCE_ROOT/googleclient/foo/site_scons')
 }}}
 
-== !AddTargetGroup() ==
+== !AddTargetGroup ==
 Adds a target group, used for printing help.
 
 Usage: `AddTargetGroup(name, description)`
@@ -71,12 +71,15 @@ env.ComponentProgram('cheese', cheese_inputs)
 env.Alias('dinner', env.Alias('appetizers'))
 }}}
 
-== !AddTargetHelp() ==
+== !AddTargetHelp ==
+
+Usage: `AddTargetHelp()`
+
 Adds SCons help for the targets, groups, and modes.  This is called
 automatically by !BuildEnvironments(); normally, you don't need to call
 this.
 
-== !BuildEnvironments() ==
+== !BuildEnvironments ==
 Build a collection of SConscripts under a collection of environments.
 
 Usage: `BuildEnvironments(environments)`
@@ -125,7 +128,7 @@ BuildEnvironments([
 ])
 }}}
 
-== !DeclareBit() ==
+== !DeclareBit ==
 Declares and describes the bit.
 
 Usage: `DeclareBit(bit_name, desc, exclusive_groups=None)`
@@ -183,7 +186,7 @@ if env.Bit('foo'):
   inputs += ['foo_only.cpp']
 }}}
 
-== !GetTargetGroups() ==
+== !GetTargetGroups ==
 Returns the dict of target groups, indexed by group name.
 
 Usage: `groups = !GetTargetGroups()`
@@ -202,7 +205,7 @@ It might be useful for short-term debugging or in your own tool, but think hard
 before calling this from a SConscript - there's probably a better way to do
 what you want.
 
-== !GetTargetModes() ==
+== !GetTargetModes ==
 Returns the dict of target modes, indexed by mode name.
 
 Usage: `modes = !GetTargetModes()`
@@ -225,7 +228,7 @@ It might be useful for short-term debugging or in your own tool, but think hard
 before calling this from a SConscript - there's probably a better way to do
 what you want.
 
-== !GetTargets() ==
+== !GetTargets ==
 Returns the dict of targets, indexed by target name.
 
 Usage: `targets = !GetTargets()`
@@ -263,3 +266,684 @@ this variable.
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 </wiki:comment>
+
+= Environment Methods =
+
+== !AllBits ==
+Checks if the environment has all the bits.
+
+Usage: `env.AllBits(bits)`
+
+Args:
+   * bits: One or mode bits to check (though if you're only checking a single bit, env.Bit() is cheaper)
+
+Returns True if every bit listed is present in the environment.
+
+Example:
+{{{
+if env.AllBits('windows', 'debug'):
+  inputs += ['foo_debug_only.cpp']
+}}}
+
+== !AnyBits ==
+Checks if the environment has at least one of the bits.
+
+Usage: `env.AnyBits(bits)`
+
+Args:
+   * bits: One or mode bits to check (though if you're only checking a single bit, env.Bit() is cheaper)
+
+Returns True if at least one bit listed is present in the environment.
+
+Example:
+{{{
+if env.AnyBits('linux', 'mac'):
+  inputs += ['linux_or_mac.cpp']
+}}}
+
+== ApplySConscript ==
+Applies a SConscript to the current environment.
+
+Usage: `env.ApplySConscript(sconscript_file)`
+
+Args:
+   * sconscript_file: Name of SConscript file to apply.
+
+Returns the return value from the call to SCons's SConscript().
+
+env.ApplySConscript() should be used when an existing SConscript which sets up
+an environment gets too large, or when there is common setup between multiple
+environments which can't be reduced into a parent environment which the
+multiple child environments Clone() from.  The latter case is necessary
+because env.Clone() only enables single inheritance for environments.
+
+env.ApplySConscript() is NOT intended to replace the env.Tool() method.  If
+you need to add methods or builders to one or more environments, do that as a
+tool (and write unit tests for them).
+
+env.ApplySConscript() is equivalent to the following SCons call:
+{{{
+SConscript(sconscript_file, exports={'env':self})
+}}}
+
+The called SConscript should import the 'env' variable to get access to the
+calling environment:
+{{{
+Import('env')
+}}}
+
+Changes made to env in the called SConscript will be applied to the environment
+calling env.ApplySConscript() - that is, env in the called SConscript is a
+reference to the calling environment.
+
+If you need to export multiple variables to the called SConscript, or return
+variables from it, use the existing SConscript() function.
+
+Example:
+{{{
+# Add include paths, etc. for net utils
+env.ApplySConscript('$MAIN_DIR/netutils/using_netutils.scons')
+
+# (after the call, env has been modified; in this example, 'USING_NETUTILS' has
+# been added to CPPDEFINES.
+}}}
+Sample code for a SConscript caled by env.ApplySConscript():
+{{{
+# Import a copy of the calling environment
+Import('env')
+
+# Changes made here affect the calling environment
+env.Append(CPPDEFINES=['USING_NETUTILS'])
+}}}
+
+== Archive7zip ==
+7zip archive builder.
+
+Usage: `env.Archive7zip(target, source)`
+
+Stores the sources in the target archive without compression.
+
+Use env.Compress7zip() to create an archive which uses compression.
+
+Example:
+{{{
+env.Archive7zip('foo.7z', ['foo.exe'])
+}}}
+
+== Bit ==
+Checks if the environment has the bit.
+
+Usage: `env.Bit(bit_name)`
+
+Args:
+   * bit_name: Name of the bit to check.
+
+Returns True if the bit is present in the environment.
+
+Example:
+{{{
+if env.Bit('windows'):
+  inputs += ['windows.cpp']
+}}}
+
+== BuildSConscript ==
+Builds a SConscript based on the current environment.
+
+Usage: `env.BuildSConscript(sconscript_file)`
+
+Args:
+   * sconscript_file: Name of SConscript file to build.  If this is a directory, this method will look for sconscript_file+'/build.scons', and if that is not found, sconscript_file+'/SConscript'.
+
+Returns the return value from the call to SConscript().
+
+env.BuildSConscript() should be used when an existing SConscript which builds a
+project gets too large, or when a group of SConscripts are logically related
+but should not directly affect each others' environments (for example, a
+library might want to build a number of unit tests which exist in
+subdirectories, but not allow those tests' SConscripts to affect/pollute the
+library's environment.
+
+env.BuildSConscript() is NOT intended to replace the env.Tool() method.  If you
+need to add methods or builders to one or more environments, do that as a tool
+(and write unit tests for them).
+
+env.BuildSConscript() is equivalent to the following SCons call:
+{{{
+SConscript(sconscript_file, exports={'env':self.Clone()})
+}}}
+or if sconscript_file is a directory:
+{{{
+SConscript(sconscript_file+'/build.scons', exports={'env':self.Clone()})
+}}}
+
+The called SConscript should import the 'env' variable to get access to the
+calling environment:
+{{{
+Import('env')
+}}}
+
+Changes made to env in the called SConscript will NOT be applied to the
+environment calling env.BuildSConscript() - that is, env in the called
+SConscript is a clone/copy of the calling environment, not a reference to that
+environment.
+
+If you need to export multiple variables to the called SConscript, or return
+variables from it, use the existing SConscript() function.
+
+Examples:
+{{{
+# Call sub-SConscript to build export lib
+env.BuildSConscript('export_lib.scons')
+
+# Look in the tests subdirectory for 'build.scons' or 'SConscript, and build it
+env.BuildSConscript('tests')
+}}}
+Sample code for a SConscript caled by env.BuildSConscript():
+{{{
+# Import a copy of the calling environment
+Import('env')
+
+# Changes made here do not affect the calling environment
+env.Append(CPPDEFINES=['FOO', 'BAR'])
+
+# Build the shared/dynamic export library
+env.ComponentLibrary('foo_export', 'foo_export.cpp', COMPONENT_STATIC=False)
+}}}
+
+== !ClearBits ==
+Clears the bits in the environment.
+
+Usage: `env.ClearBits(bits)`
+
+Args:
+   * bits: One or mode bits to clear.
+
+Example:
+{{{
+env.ClearBits('use-that-dll')
+}}}
+
+== !CommandOutput ==
+Runs a command and captures its output.  Returns a list containing the node for
+the output file.
+
+Usage: `env.CommandOutput(target, source)`
+
+Example:
+{{{
+# Run foo.exe and capture output to foo.out.
+env.CommandOutput('foo.out', 'foo.exe')
+
+# Run bar.exe with the options '-a -b', in the directory './bardir'
+env.CommandOutput('bar.out', 'foo.exe',
+                  COMMAND_OUTPUT_CMDLINE='$SOURCE -a -b',
+                  COMMAND_OUTPUT_RUN_DIR='./bardir')
+
+# Run baz.exe.  Don't echo the output to stdout when running.  Timeout after 30
+# seconds.
+env.CommandOutput('baz.out', 'baz.exe',
+                  COMMAND_OUTPUT_ECHO=False,
+                  COMMAND_OUTPUT_TIMEOUT=30)
+}}}
+
+Uses variables:
+   * $COMMAND_OUTPUT_CMDLINE
+   * $COMMAND_OUTPUT_ECHO
+   * $COMMAND_OUTPUT_RUN_DIR
+   * $COMMAND_OUTPUT_TIMEOUT
+   * $COMMAND_OUTPUT_TIMEOUT_ERRORLEVEL
+
+== !ComponentLibrary ==
+Builds a library.
+
+Usage: `env.ComponentLibrary(lib_name, source)`
+
+Args:
+   * lib_name: Name of library.
+   * sources: List of input files (sources, objects, etc.)
+   * (any other args which are valid for the SCons env.Library() builder)
+
+In hammer, use env.!ComponentLibrary() instead of SCons's env.Library(),
+env.!StaticLibrary(), or env.!SharedLibrary().  env.!ComponentLibrary() differs
+in the following ways:
+   * Uses $COMPONENT_PLATFORM_SETUP to do target-platform-specific setup.
+   * Uses $COMPONENT_STATIC to determine whether the object should be compiled static or shared.
+   * Uses $INCLUDES to set up include files which should be specified on the compiler command line.
+   * Sets up target aliases, so if you env.!ComponentLibrary('foo', ...) you can build the library via 'hammer foo'.
+   * Publishes library outputs for use by env.!ComponentProgram() and env.!ComponentPackage()
+   * Replicates the library output to $LIB_DIR.
+
+Examples:
+{{{
+# Compile either a shared or static library, depending on the default value of
+# COMPONENT_STATIC
+env.ComponentLibrary('foo', ['foo.cpp'])
+
+# Compile a shared library
+env.ComponentLibrary('foo2', ['foo.cpp'], COMPONENT_STATIC=False)
+
+# Compile a static library
+env.ComponentLibrary('foo3', ['foo.cpp'], COMPONENT_STATIC=True)
+}}}
+
+== !ComponentObject ==
+Compiles one or more source files to object files.
+
+Usage: Same as SCons's env.Object(): `env.ComponentObject(target, source)`
+
+In hammer, use env.!ComponentObject() instead of SCons's env.Object() or
+env.!SharedObject().  env.!ComponentObject() differs in the following ways:
+   * Uses $COMPONENT_PLATFORM_SETUP to do target-platform-specific setup.
+   * Uses $COMPONENT_STATIC to determine whether the object should be compiled static or shared.
+   * Uses $INCLUDES to set up include files which should be specified on the compiler command line.
+
+Examples:
+{{{
+# Compile foo.cpp to either a shared or static object, depending on the
+# default value of COMPONENT_STATIC:
+env.ComponentObject('foo.cpp')
+
+# Compile foo.cpp to a shared object, and include bar.h on the command line
+env.Append(INCLUDES=['bar.h'])
+env.ComponentObject('foo.cpp', COMPONENT_STATIC=False)
+
+# Compile a.c, b.cpp, and d.cc into objects
+env.ComponentObject(['a.c', 'b.cpp', 'd.cc'])
+
+# Compile foo.cpp to an object file named oof.  The suffix (file extension) of
+# the object file depends on the target platform and whether it's shared or
+# static.
+env.ComponentObject('oof', 'foo.cpp')
+}}}
+
+== !ComponentPackage ==
+Creates a package (that is, a collection of resources from one or more
+components) and copies the resources for those components to the destination
+directory.
+
+Usage: `env.ComponentPackage(package_name, dest_dir)`
+
+Args:
+   * package_name: Name of package.
+   * dest_dir: Destination directory for package.
+
+Returns the alias node for the package.
+
+Example:
+{{{
+env.ComponentProgram('foo', foo_inputs)
+env.ComponentProgram('bar', bar_inputs)
+env.ComponentPackage('install',
+                     '$TARGET_ROOT/install',
+                     COMPONENTS=['foo', 'bar'])
+}}}
+
+== !ComponentProgram ==
+Compiles and links a program.
+
+Usage: `env.ComponentProgram(prog_name, source)`
+
+Args:
+   * prog_name: Name of the program.
+   * source: List of input files (sources, objects, etc.)
+   * (any other args which are valid for the SCons env.Program() builder)
+
+This builder does the following:
+   * Compiles and links the program.
+   * Replicates the program and any shared libraries used by the program to $STAGING_DIR (or to somewhere else, if you've changed $COMPONENT_PROGRAM_RESOURCES).
+
+Example:
+{{{
+# Create a program 'foo' which links against lib 'bar'
+env.Append(LIBS=['bar'])
+env.ComponentProgram('foo', ['fooa.cpp', 'foob.cpp', 'fooc.cpp'])
+}}}
+
+== !ComponentTestOutput ==
+Describes test output which is generated by some other program.
+
+Usage: `env.ComponentTestOutput(test_name, sources)`
+
+Args:
+   * test_name: Name of the test.
+   * sources: List of files/nodes output by the test.
+
+This is called internally by env.!ComponentTestProgram() to set up its 'run'
+alias.
+
+The 'run' alias will be added to the following target groups:
+      * If $COMPONENT_TEST_ENABLED=False, added to 'run_disabled_tests' only; the steps below are not performed.
+      * If $COMPONENT_TEST_OUTPUT_GROUPS, added to those groups.
+      * If $COMPONENT_TEST_SIZE is set, added to 'run_COMPONENT_TEST_SIZE_tests' (for example, 'run_large_tests').
+
+
+Example:
+{{{
+# Running 'precompiled_tests/foo.exe -o foo.dat', creates foo.dat.
+test_out = env.Command(['foo.dat'], ['precompiled_tests/foo.exe'],
+                       '$SOURCE -o $TARGET')
+
+# Add 'run_foo' as an alias for running that test, which is a medium test.
+env.ComponentTestOutput('run_foo', test_out, COMPONENT_TEST_SIZE='medium')
+}}}
+
+== !ComponentTestProgram ==
+Compiles and links a test program.
+
+Usage: `env.ComponentTestProgram(program_name, sources)`
+
+Args:
+   * program_name: Name of the program.
+   * sources: List of input files (sources, objects, etc.)
+   * (any other args which are valid for the SCons env.Program() builder)
+
+This builder does the following:
+   * Compiles and links the test program.
+   * Replicates the test program, its test input, and any shared libraries used by the test program to $TESTS_DIR (or to somewhere else, if you've changed $COMPONENT_TEST_PROGRAM_RESOURCES).
+   * If $COMPONENT_TEST_RUNNABLE (the default), sets up a 'run' alias to run the test program.  That is, if your program is 'foo', this creates a 'run_foo' alias for hammer to run the test if it's been recompiled or its inputs have changed.  (See also the --retest command line option).  See env.!ComponentTestOutput() for variables which affect setting up this alias.
+
+Examples:
+{{{
+# Create a test program 'foo', and a 'run_foo' target to run the test.
+env.ComponentTestProgram('foo', ['foo.cpp'])
+
+# Create a small test program 'foo2' which needs 'a.jpg' in the same directory
+# to run the test.
+env.ComponentTestProgram('foo2', ['foo.cpp'], COMPONENT_TEST_SIZE='small')
+env.Publish('foo2', 'test_input', 'a.jpg')
+
+# Create a test program 'bar', which the 'foo' test program needs (maybe bar is
+# a mock server for the foo test program).  Don't add a 'run_bar' alias.
+p = env.ComponentTestProgram('bar', ['bar.cpp'], COMPONENT_TEST_RUNNABLE=False)
+env.Depends(env.Alias('foo'), p)
+
+# Create a test program 'foo3' which is known to be flaky, so shouldn't be run
+# by 'hammer run_all_tests'
+env.ComponentTestProgram('foo3', ['foo.cpp'], COMPONENT_TEST_DISABLED=True)
+}}}
+
+== ComponentVSProject ==
+Visual Studio target project builder.
+
+Usage: `env.ComponentVSProject(target_name)`
+
+Args:
+   * target_name: Target name to build a project for,.
+
+Builds a Visual Studio project file for the target, which can be used to
+build, run, and debug the target in Visual Studio.
+
+The build configurations which this project will support are those specified
+on the command line to hammer at the time the project is generated.  That is,
+if you want to generate a project file which can be used to build the 'dbg'
+and 'opt' build environments, build the project with
+'hammer --mode=dbg,opt your_project_alias'.  Or perhaps more usefully,
+'hammer --mode=all your_project_alias'.
+
+Note that this project contains no source code.  This makes it very fast to
+build and also means it does not need to be rebuilt unless the path to the
+output file changes.  It is recommended to have one target project per target,
+then a single source code project from env.ComponetVSDirProject() with the
+source for your entire project.  This is very handy at avoiding the
+never-ending stream of may-I-reload-your-project dialog boxes from Visual
+Studio when the project files are updated.
+
+Usually, it's easier to use env.ComponentVSSolution() to build all of the
+target projects for your project at once.
+
+Example:
+{{{
+env.Program('foo', ['foo.cpp'])
+
+p = env.ComponentVSProject('foo')
+# Add the project file to the 'projects' alias, so that
+# 'hammer projects --mode=all' will rebuild all your projects.
+env.Alias('projects', p)
+}}}
+
+== ComponentVSSolution ==
+Visual Studio solution file builder.
+
+Usage: `env.ComponentVSSolution(self, solution_name, target_names, projects)`
+
+Args:
+   * solution_name: Name of the solution.
+   * target_names: Names of targets or target groups to include in the solution.  This will automatically build projects for them.
+   * projects: List of aditional projects not generated by this solution to include in the solution.  May be omitteded if not needed.
+
+This builds a Visual Studio solution file which contains the listed targets,
+and builds project files for those targets.  Additional project files
+(generated by other component_targets_msvs project builder calls, hand-built,
+etc.) specified in the projects option will be included in the solution.
+
+If target_names contains any target groups (see !AddTargetGroup()), the
+solution will create projects for each of the targets in the group, and place
+them all in a solution folder named for the group.
+
+Example:
+{{{
+env.Tool('component_targets_msvs')
+
+# Build a source code project
+p = env.ComponentVSDirProject('project_source', ['$MAIN_DIR'])
+
+# Build target projects and solution, and include the source code project.
+env.ComponentVSSolution('hammer_solution', ['all_programs', 'all_libraries'],
+                        projects=[p])
+}}}
+
+== ComponentVSSourceProject ==
+Visual Studio source project builder.
+
+Usage: `env.ComponentVSSourceProject(project_name, target_names)`
+
+Args:
+   * project_name: Name of the project.
+   * target_names: List of target names to include source for.
+
+This builder scans the dependency graph to find all sources for the targets,
+including the sources and headers for any libraries used to build the targets,
+then produces a Visual Studio project file containing that source.  It uses
+the $COMPONENT_VS_SOURCE_FOLDERS variable to determine how to map the sources
+it finds into folders in the project file.
+
+While this builder generates the most correct list of source files, it can also
+be painfully slow to run.  You can get almost as good a result in orders of
+magnitude less time using env.ComponentVSDirProject().
+
+Example:
+{{{
+env.ComponentVSSourceProject('foo_source', ['foo'])
+}}}
+
+== ComponentVSDirProject ==
+Visual Studio directory-based source project builder.
+
+Usage: `env.ComponentVSDirProject(project_name, source)`
+
+Args:
+   * project_name: Name of the project.
+   * source: List of source files and/or directories.
+
+This builder scans the directories from the source list to find all files with
+suffixes listed in $COMPONENT_VS_SOURCE_SUFFIXES, then produces a Visual Studio
+project file containing that source.  It uses
+the $COMPONENT_VS_SOURCE_FOLDERS variable to determine how to map the sources
+it finds into folders in the project file.
+
+Example:
+{{{
+env.ComponentVSDirProject('foo_source', ['$MAIN_DIR'])
+}}}
+
+== Compress7zip ==
+7zip compressed archive builder.
+
+Usage: `env.Compress7zip(target, source)`
+
+Stores the sources in the target archive with maximum compression.
+
+Use env.Archive7zip() to create an archive which does not use compression.
+
+Example:
+{{{
+env.Compress7zip('foo.7z', ['foo.exe'])
+}}}
+
+== !ConcatSource ==
+Source concatenation builder.
+
+Usage: `env.ConcatSource(target, source)`
+
+Args:
+   * target: Target source-concatenation file.  Will be given the '$CXXFILESUFFIX' suffix if no file suffix is specified.
+   * source: List of source files to include.
+
+The source concatenation builder picks out the input source files which have
+file suffixes listed in $CONCAT_SOURCE_SUFFIXES, and replaces them with a
+single source file which uses #includes to reference them.
+
+Benefits:
+   * Dramatic speedup of compile times, since the compiler is invoked fewer times on bigger files, and header files are preprocessed fewer times.  Some projects have seen 5x speedup using env.!ConcatSource().
+   * Better cross-file optimization resulting in smaller, faster binaries.
+   * Reduces duplicate instantiation of static template classes.
+
+Risks:
+   * Since the source files are all effectively concatenated, there can be symbol name conflicts if you reuse the same static variable or function names in multiple source files.
+   * Header files included in one source file can affect other source files.  The most common failure mode is that you include code in b.cc which relies on the header file included in a.cc, so when you compile without source concatenation, b.cc fails with undefined symbols.
+
+Example:
+{{{
+inputs = [
+    env.ConcatSource('concat_b', ['b1.cc', 'b2.cc', 'b4.cc', 'foo.mm']),
+    # b3.cc defines static variables which conflict with b2.cc, so they can't
+    # be in the same ConcatSource() call.
+    'b3.cc',
+]
+}}}
+
+If $CONCAT_SOURCE_ENABLE=True, the resulting inputs will be
+['concat_b.cc', 'foo.mm', 'b3.cc'], where concat_b.cc contains something like:
+{{{
+#include "b1.cc"
+#include "b2.cc"
+#include "b4.cc"
+}}}
+Note that 'foo.mm' is not included in concat_b.cc because '.mm' is not one of
+the suffixes listed in $CONCAT_SOURCE_SUFFIXES.
+
+If $CONCAT_SOURCE_ENABLE=False, the resulting inputs will be
+['b1.cc', 'b2.cc', 'b4.cc', 'foo.mm', 'b3.cc'].  That is, the inputs are the
+same as if the env.!ConcatSource() call was not there.  This makes it easy to
+sanity-check or disable the effect of env.!ConcatSource().
+
+== Defer ==
+Adds a deferred function or modifies defer dependencies.
+
+Usage: `env.Defer(function, name, after)`
+
+Args:
+   * function: Function to defer.  May be omitted if this call is to add a relationship between other deferred functions.
+   * name: Name of the function or group to defer.  If this is omitted, the name of the function is used.
+   * after: Function, name, or list of functions/names which should run before the deferred function/name.
+
+The deferred function should take an env argument, which will be passed the
+environment used to call env.Defer(), and will be executed in the same working
+directory as the calling SConscript.
+(Exception: if this environment is cloned and the clone calls
+env.!SetDeferRoot() and then env.!ExecuteDefer(), the function will be passed
+the root environment, instead of the environment used to call env.Defer().)
+
+All deferred functions run after all SConscripts.  Additional dependencies
+may be specified with the after= keyword.
+
+Examples:
+{{{
+def func(env):
+  """Deferred function to do something.
+
+  Args:
+    env: Environment context used in env.Defer() call.
+  """
+  ...
+
+# Defer func() until after all SConscripts
+env.Defer(func)
+
+# Defer func() until otherfunc() runs
+env.Defer(func, after=otherfunc)
+
+# Defer func() until after SConscripts, put in group 'bob'
+env.Defer(func, 'bob')
+
+# Defer func2() until after all funcs in 'bob' group have run
+env.Defer(func2, after='bob')
+
+# Defer func3() until after SConscripts, put in group 'sam'
+env.Defer(func3, 'sam')
+
+# Defer all functions in group 'bob' until after all functions in group 'sam'
+have run.
+env.Defer('bob', after='sam')
+
+# Defer func4() until after all functions in groups 'bob' and 'sam' have run.
+env.Defer(func4, after=['bob', 'sam'])
+}}}
+
+== !ExecuteDefer ==
+Executes deferred functions.
+
+Usage: `env.ExecuteDefer()`
+
+This is called automatically by !BuildEnvironments().
+
+== Extract7zip ==
+Extract from a 7zip archive.
+
+Usage: `env.Extract7zip(target_directory_dummy, source)`
+
+7-zip behaves like an odd combination of tar and gzip. As result this builder
+has two ways it can be used.
+
+If you want to extract one layer of a 7-zip archive, you would do:
+{{{
+  out_file = env.Extract7zip('outdir/dummy_file', 'archive.7z')
+}}}
+
+This builder has a proper generator and emitter, at SCons time you will get a
+list of archive contents.  Be aware this can have performance overhead, since
+7zip archives are being explored to generate the DAG.
+
+In typical usage, 7-zip archives often contain a collection of files which has
+been archive, and the resulting 7-zip file then compressed (similar to
+xyz.tar.gz, but essentially xyz.7z.7z). To handle this gracefully (and be able
+to get file nodes from it), the Extract7zip() builder has the
+$SEVEN_ZIP_PEEL_LAYERS flag. If you wish to extract the contents of a doubly
+7-zipped file you can do this:
+{{{
+  many_files = env.Extract7zip('outdir/dummy_file', 'archive.7z', SEVEN_ZIP_PEEL_LAYERS=True)
+}}}
+
+== !FilterOut ==
+Removes values from existing construction variables in an Environment.  This
+is the inverse of SCons's env.Append().
+
+Usage: `env.FilterOut(variable-values pairs)`
+
+For each variable, the values to remove should be a list.
+
+It is not necessary to check if the variables and/or values are already in the
+environment before calling env.!FilterOut().
+
+Examples:
+{{{
+# Remove the SOME_DEFINE flag from CPPDEFINES, if it is present.
+env.FilterOut(CPPDEFINES=['SOME_DEFINE'])
+
+# Remove multiple values from variables
+env.FilterOut(
+    CPPPATH=['$MAIN_DIR/include1'],
+    CPPDEFINES=['FLAG1', 'FLAG2'],
+)
+}}}
+
