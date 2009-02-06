@@ -18,6 +18,9 @@ For general SCons environment variables and methods see:
 
 = Global Methods and Variables =
 
+The following global methods and variables are available outside of
+environments.
+
 == !AddSiteDir ==
 Add a site directory, as if passed to the --site-dir option.
 
@@ -268,6 +271,9 @@ this variable.
 </wiki:comment>
 
 = Environment Methods =
+
+The tools in Software Construction Toolkit add the following methods to SCons
+environments.
 
 == !AllBits ==
 Checks if the environment has all the bits.
@@ -947,3 +953,410 @@ env.FilterOut(
 )
 }}}
 
+== !GatherInputs ==
+Find all (non-generated) input files used for a target.
+
+Usage: `env.GatherInputs(target, groups, exclude_pattern)`
+
+Args:
+   * target: a target node to find source files for.  For example: `env.File('bob.exe')`
+   * groups: a list of patterns to use as categories. For example: `['.*\\.c$', '.*\\.h$']`.  If not specified, uses `['.*']`, which includes all inputs.
+   * exclude_pattern: optional pattern to exclude from the search. For example: `'.*third_party.*'`
+
+Returns a list of lists of files for each category.  Each file will be placed
+in the first category which matches, even if categories overlap.  For example:
+`[['bob.c', 'jim.c'], ['bob.h', 'jim.h']]`
+
+Note that if the dependency graph is large (that is, you've got lots of
+targets, libraries, headers, etc.), env.!GatherInputs() can be very slooooow.
+
+Example:
+{{{
+p = env.Program('bob', inputs)
+bob_headers = env.GatherInputs(p, ['\\.h$'])[0]
+}}}
+bob_headers contains a list of all the header files included by any of
+the 'bob' program's inputs, including any headers included by sources
+compiled into libs which bob links against.  Note the `[0]` to return the first
+list in the list-of-lists returned by env.!GatherInputs().
+
+== !GetDeferRoot ==
+
+Usage: `env.GetDeferRoot()`
+
+Returns the root environment for defer.  If one of this environment's parents
+called env.!SetDeferRoot(), returns that environment.  Otherwise returns the
+current environment (that is, env).
+
+== !GetPublished ==
+Returns a list of the published resources of the specified type.
+
+Usage: `env.GetPublished(group_name, resource_type)`
+
+Args:
+   * group_name: Name of resource group, or a list of names of resource groups.
+   * resource_type: Type of resources (string), or a list of resource types.
+
+Returns a flattened list of the source nodes from calls to Publish() for the
+specified group and resource type.  Returns an empty list if there are no
+matching resources.
+
+env.!GetPublished() is usually used in a function which is deferred via
+env.Defer(), so that all other SConscripts have a chance to publish resources
+first.
+
+Example:
+{{{
+def DeferGetPublished(env):
+   xml_files = env.GetPublished('test', 'xml')
+
+env.Defer(DeferGetTestXml)
+}}}
+
+== Overlap ==
+Checks for overlap between the values.
+
+Usage: `env.Overlap(values1, values2)`
+
+Args:
+   * values1: First value(s) to compare.  May be a string or list of strings.
+   * values2: Second value(s) to compare.  May be a string or list of strings.
+
+Returns the list of values in common after substitution, or an empty list if
+the values do not overlap.
+
+Converts the values to a set of plain strings via env.!SubstList2() before
+comparison, so SCons $ variables are evaluated.
+
+If you're thinking of using this to conditionally evaluate parts of your
+SConscript based on what flags are in CPPDEFINES, it is better to use
+the component_bits functions instead.  Those are more explicit and less prone
+to errors.  For example, `env.Overlap('$CPPDEFINES', ['OS_WINDOOWS'])` will
+silently fail, but `env.Bit('windoows')` will print an error message that the
+'windoows' bit has not been defined.
+
+Examples:
+{{{
+# Find directories in common between CPPPATH and LIBPATH
+common_dirs = env.Overlap('$CPPPATH', '$LIBPATH')
+
+# Check if a.cc, b.cc, or c.cc is in the inputs list
+if env.Overlap(inputs, ['a.cc', 'b.cc', 'c.cc']):
+  ...
+}}}
+
+== !PrintDefer ==
+Prints the current defer dependency graph for debugging.
+
+Usage: `env.PrintDefer(print_functions)`
+
+Args:
+   * print_functions: If True (the default), print individual functions in defer groups.
+
+== Publish ==
+Publishes resources for use by other scripts.
+
+Usage: `env.Publish(group_name, resource_type, source, subdir)`
+
+Args:
+   * group_name: Name of resource group.
+   * resource_type: Type of resources (string).
+   * source: Source file(s) to publish.  May be a string, Node, or a list of mixed strings or Nodes.  Strings will be passed through env.Glob() to evaluate wildcards.  If a source evaluates to a directory, the entire directory will be recursively published.
+   * subdir: Optional subdirectory to which the resources should be published, relative to the primary directory for that resource type.  If omitted or None, resources are published in the primary directory for that resource type.
+
+Most component builders automatically publish resources of type 'run' and
+'debug'.
+
+Examples:
+{{{
+# Publish input.txt and expected.out as test inputs for the 'foo' unit test.
+env.ComponentTestProgram('foo', foo_inputs)
+env.Publish('foo', 'test_input', ['input.txt', 'expected.out'])
+
+# Publish xml templates for the navigate component.  These should go into the
+# 'nav' subdirectory of the templates directory.
+env.Publish('navigate', 'templates', 'xml/*.xml', subdir='nav')
+
+# Publish the entire res subdirectory tree as resources for navigate.
+env.Publish('navigate', 'resources', 'res')
+}}}
+
+== !RelativePath ==
+Returns the relative path from source to target.
+
+Usage: `env.RelativePath(source, target, sep, source_is_file)`
+
+Args:
+   * source: Source path or node.
+   * target: Target path or node.
+   * sep: Path separator to use in returned relative path.  Defaults to the separator for the host platform if not specified.
+   * source_is_file: If True, calculates the relative path from the directory containing the source, rather than the source itself.  Note that if source is a node, you can pass in source.dir instead, which is shorter.
+
+Examples:
+{{{
+# Find relative path from $MAIN_DIR to $GOOGLE3
+relpath = env.RelativePath('$MAIN_DIR', '$GOOGLE3')
+
+# Find relative path from 'foo.idl' to the obj directory matching the current
+# directory
+relpath = env.RelativePath('foo.idl', '.', source_is_file=True)
+}}}
+
+== !ReplaceStrings ==
+Replace Strings builder, does regex substitution on files.
+
+Usage: `env.ReplaceStrings(target, source)`
+
+Args:
+   * target: A single target file name or node.
+   * source: A single input file name or node.
+
+Uses the $REPLACE_STRINGS environment variable to determine what strings to
+replace.
+
+Example:
+{{{
+env.ReplaceStrings('out', 'in', REPLACE_STRINGS = [('a*', 'b'), ('b', 'CCC')])
+}}}
+If 'in' has the contents `Haaapy`, this will create a file 'out' with contents
+`HCCCpy`.
+
+== Replicate ==
+Replicates (copies) source files/directories to the target directory.  Use this
+instead of env.Install() or env.Copy().
+
+Usage: `env.Replicate(target, source)`
+
+Args:
+   * target: Destination(s) for copy.  Must evaluate to a directory via env.Dir(), or a list of directories.  If more than one directory is passed, the entire source list will be copied to each target directory.
+   * source: Source file(s) to copy.  May be a string, Node, or a list of mixed strings or Nodes.  Strings will be passed through env.Glob() to evaluate wildcards.  If a source evaluates to a directory, the entire directory will be recursively copied.
+
+Returns a list of the destination nodes from the calls to env.Install()
+
+env.Replicate is much like env.Install(), with the following differences:
+   * Uses hard linking when safely possible.
+   * If the source is a directory, recurses through it and calls env.Install() on each source file, rather than copying the entire directory at once.  This provides more opportunity for hard linking, and also makes the destination files/directories all writable.
+   * Can take sources which contain env.Glob()-style wildcards.
+   * Can take multiple target directories; will copy to all of them.
+   * Handles duplicate requests.
+   * More flexible support for renaming destination files using the $REPLICATE_REPLACE variable.
+
+Examples:
+{{{
+# Copy all the html files from html/ to the artifacts directory.
+env.Replicate('$ARTIFACTS_DIR', 'html/*.html')
+
+# Copy two files.
+env.Replicate('dst', ['file1', 'file2'])
+
+# Copy footext.txt to distdir/footxt.bar.
+env.Replicate('destdir', ['footxt.txt'],
+              REPLICATE_REPLACE = [('\\.txt', '.bar'), ('est', 'ist')])
+}}}
+In the example above, note the use of '\\' to escape the '.' character,
+so that it doesn't act like the regexp '.' and match any character.
+
+== !ReplicatePublished ==
+Replicate published resources for the group to the target directory.
+
+Usage: `env.ReplicatePublished(target, group_name, resource_type)`
+
+Args:
+   * target: Target directory for resources.
+   * group_name: Name of resource group, or a list of names of resource groups.
+   * resource_type: Type of resources (string), or a list of resource types.
+
+Uses the subdir parameter passed to env.Publish() when replicating source nodes
+to the target.
+
+Returns the list of target nodes from the calls to env.Replicate().
+
+Since this calls env.Replicate(), it will also use the $REPLICATE_REPLACE
+variable, if it's set in the calling environment.
+
+Many builders automatically defer their own calls to env.!ReplicatePublished()
+to replicate the files needed to run the builder output.  Examples include
+env.!ComponentProgram(), env.!ComponentPackage(), and
+env.!ComponentTestProgram().
+
+It's often easier to use env.!ComponentPackage() to gather and publish multiple
+resource types from multiple components, instead of using multiple calls to
+env.!ReplicatePublished().
+
+Example:
+{{{
+# (somewhere earlier)
+env.Append(COMPONENTS=['foo', 'bar'])
+
+# Defer copying the templates, so that all the other SConscripts get a chance
+# to publish them.
+def CopyTemplates(env):
+  # Copy the templates for all components to $STAGING_DIR/templates.
+  env.ReplicatePublished('$STAGING_DIR/templates', '$COMPONENTS', 'templates')
+
+env.Defer(CopyTemplates)
+}}}
+
+== !SetBitFromOption ==
+Sets the bits in the environment.
+
+Usage: `env.SetBitFromOption(bit_name, default)`
+
+Args:
+   * bit_name: Name of the bit to set from a command line option.
+   * default: Default value for bit if command line option is not present (True or False).
+
+This creates two command line options - one to set the bit, one to clear the
+bit.  If bit_name='foo', this will create the options '--foo' and '--no-foo'.
+
+Example:
+{{{
+# This checks the command line options.  If '--dice' is specified, sets the
+# 'dice' bit.  If '--no-dice' is specified, clears the 'dice' bit.  If neither
+# is specified, uses the default value of True (meaning set the 'dice' bit).
+env.SetBitFromOption('dice', True)
+}}}
+
+== SetBits ==
+Sets the bits in the environment.
+
+Usage: `env.SetBits(bits)`
+
+Args:
+   * bits: One or mode bits to set.
+
+Example:
+{{{
+env.SetBits('use-that-dll')
+}}}
+
+== !SetDeferRoot ==
+Sets the current environment as the root environment for defer.
+
+Usage: `env.SetDeferRoot()`
+
+This is called automatically by !BuildEnvironments().
+
+Functions deferred by environments cloned from the root environment (that is,
+function deferred by children of the root environment) will be executed when
+env.!ExecuteDefer() is called from the root environment.
+
+Functions deferred by environments from which the root environment was cloned
+(that is, functions deferred by parents of the root environment) will be
+passed the root environment instead of the original parent environment.
+(Otherwise, they would have no way to determine the root environment.)
+
+== !SetTargetDescription ==
+Convenience function to set a target's global DESCRIPTION property.
+
+Usage: `env.SetTargetDescription(target_name, description)`
+
+Args:
+   * self: Environment context.
+   * target_name: Name of the target.
+   * description: Description of the target.
+
+This is equivalent to calling
+{{{
+env.SetTargetProperty(target_name, all_modes=True, DESCRIPTION=description)
+}}}
+
+== !SetTargetProperty ==
+Sets one or more properties for a target.
+
+Usage: `env.SetTargetProperty(self, target_name, all_modes, properties)`
+
+Args:
+   * target_name: Name of the target.
+   * all_modes: If True, property applies to all modes.  If false, it applies only to the current mode (determined by self['BUILD_TYPE']).
+   * properties: One or more name-value pairs for the properties to set.  Properties will be converted to strings via env.subst().
+
+This is called automatically by component builders.
+
+Common properties:
+|| *Property* || *all_modes* || *Description* ||
+|| DESCRIPTION || True || Description of the target. ||
+|| EXE || False || Name of the executable file created by the target. ||
+|| RUN_TARGET || False || Name of the target associated with running the target. ||
+|| RUN_CMDLINE || False || Command line to use when running the target. ||
+|| TARGET_PATH || False || Path to the primary output file created by the target. ||
+These properties are used by the component_target_msvs and component_target_xml
+tools.
+
+Example:
+{{{
+env.ComponentPackage('appbundle', ...)
+
+# Since component packages can contain multiple executables, need to specify
+# which one should be executed when the package is built and run from Visual
+# Studio.  Note that here we're defining a SCons variable to hold the exe
+# name so we can use it in multiple places in the call to SetTargetProperty()
+# without needing to do python string operations.
+env['PACKAGE_EXE'] = '$STAGING_DIR/appbundle/main.$PROGSUFFIX'
+env.SetTargetProperty('appbundle',
+                      EXE='$PACKAGE_EXE',
+                      RUN_CMDLINE='$PACKAGE_EXE --some-option')
+}}}
+
+== !SignedBinary ==
+Signs a binary file (EXE/DLL) on Windows.
+
+Usage: `env.SignedBinary(target, source)`
+
+Example:
+{{{
+env.Tool('code_signing')
+env.SignedBinary('hello_signed.exe', 'hello.exe',
+                 CERTIFICATE_PATH='bob.pfx',
+                 CERTIFICATE_PASSWORD='123',
+                 TIMESTAMP_SERVER='')
+}}}
+
+If no certificate file is specified, the input exe will simply be copied to the
+output exe.
+
+If an empty timestamp server string is specified, there will be no timestamp.
+
+Uses variables:
+   * $CERTIFICATE_PATH
+   * $CERTIFICATE_PASSWORD
+   * $SIGNTOOL
+   * $TIMESTAMP_SERVER
+
+== !SubstList2 ==
+Replacement subst_list designed for flags/parameters, not command lines.
+
+Usage: `env.SubstList2(args)`
+
+Args:
+   * args: One or more strings or lists of strings.
+
+Returns a flattened, substituted list of strings.
+
+This is primarily used by tool modules.  If you find yourself using this in
+your SConscript files, you're getting pretty procedural; you're likely better
+off refactoring that code into a method in a tool in your project's site_scons
+directory, and calling that method from your SConscript.  This makes your
+procedural code more testable.
+
+SCons's built-in env.subst_list evaluates (substitutes) variables in its
+arguments, and returns a list of lists (one per positional argument).  Since
+it is designed for use in command line expansion, the list items are
+SCons.Subst.!CmdStringHolder instances.  These instances can't be passed into
+env.File() (or subsequent calls to env.subst(), either).  The returned
+nested lists also need to be flattened via env.Flatten() before the caller
+can iterate over the contents.
+
+env.!SubstList2() does a subst_list, flattens the result, then maps the
+flattened list to strings.
+
+Example:
+{{{
+# It is better to do:
+for x in env.SubstList2('$MYPARAMS'):
+# than to do:
+for x in env.get('MYPARAMS', []):
+# and definitely better than:
+for x in env['MYPARAMS']:
+# which will throw an exception if MYPARAMS isn't defined.
+}}}
