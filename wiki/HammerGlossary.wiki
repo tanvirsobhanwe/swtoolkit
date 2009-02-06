@@ -1360,3 +1360,224 @@ for x in env.get('MYPARAMS', []):
 for x in env['MYPARAMS']:
 # which will throw an exception if MYPARAMS isn't defined.
 }}}
+
+----
+<wiki:comment>
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+</wiki:comment>
+
+= Environment Variables =
+
+The following environment variables are defined by Software Construction
+Toolkit.
+
+== ATLMFC_VC80_DIR ==
+The location of the Windows ATL MFC for VC80 (Visual Studio 2005) tool for
+SCons.  Normally set automatically by the atlmfc_vc80 tool.
+
+== ARTIFACTS_DIR ==
+The location where final artifacts will be stored. (For publication in Pulse).
+Typically in $TARGET_ROOT/artifacts.
+
+== `_`BITS ==
+Used internally by the component_bits tool to track the bits for an
+environment.  Do *not* access this directly; use methods provided by the
+component_bits tool instead.
+
+== BUILD_GROUPS ==
+A list of build groups to which the build environment belongs.
+By default, all environments belong to the 'all' group.
+
+If an environment has the 'default' build group, it will be built by default
+if the user does not explicitly specify a build mode using --mode.
+
+== BUILD_SCONSCRIPTS ==
+The list of SConscripts which !BuildEnvironments() will call for each build
+environment.  An entry in this list may be file or directory.  If a directory,
+!BuildEnvironments() will first look for a file named `build.scons` in that
+directory, then `SConscript`.
+
+== BUILD_TYPE ==
+The short name of the build type for a build environment.  Common examples:
+   * dbg
+   * opt
+   * prod
+This is what the `--mode` command line option matches against when selecting a
+build type.  It is also used by default to construct the $TARGET_ROOT path.
+
+Multiple environments can have the same $BUILD_TYPE, as long as they are built
+on different host platforms.
+
+== BUILD_TYPE_DESCRIPTION ==
+A longer description for the build environment.  For example,
+'Optimized Windows build'.
+
+== CCFLAG_INCLUDE ==
+The compiler option which specifies a header file which should be included on
+the command line.  This is '-include' for gcc and '/FI' for msvc.
+
+This is normally set up by the target_platform tool.
+
+== CCFLAGS_DEBUG ==
+List of flags to pass to the C and C++ compilers if the build environment is
+a debug build.
+
+== CCFLAGS_OPTIMIZED ==
+List of flags to pass to the C and C++ compilers if the build environment is
+an optimized build.
+
+== CERTIFICATE_PASSWORD ==
+Password for the signing certificate.  Used by the code_signing tool.
+
+== CERTIFICATE_PATH ==
+Path to the signing certificate.  Used by the code_signing tool.
+
+== COLLADA_DIR ==
+Path to Collada DOM.
+
+== COLLADA_DOM_VERSION ==
+Version of Collada DOM.  Set by the collada_dom tool.
+
+== COMMAND_OUTPUT_CMDLINE ==
+Command line executed by the env.!CommandOutput() method.  May contain $SOURCE,
+which will be replaced by the first input passed to env.!CommandOutput().  May
+also contain other SCons variables; see the SCons help for env.Command().
+
+== COMMAND_OUTPUT_ECHO ==
+If set to True, output from commands run via env.!CommandOutput() will be
+echoed to the console.  If set to False, output will not be echoed.  Default is
+True.
+
+== COMMAND_OUTPUT_RUN_DIR ==
+Directory in which env.!CommandOutput() will run its command.  If not
+specified, the command will be run in $MAIN_DIR.
+
+== COMMAND_OUTPUT_TIMEOUT ==
+Timeout in seconds for the command run via env.!CommandOutput().  If the
+command has not finished by this timeout, it and all its subprocesses will be
+killed.
+
+If 0 or None, there will be no timeout.
+
+== COMMAND_OUTPUT_TIMEOUT_ERRORLEVEL ==
+Errorlevel which the env.!CommandOutput() internal builder will return if the
+command times out.  Normally you shouldn't need to change this; listed here for
+completeness of documentation.  (Note that this is not what
+env.!CommandOutput() returns; it returns a node which points to the output
+file.)
+
+== COMPONENT_LIBRARY_GROUPS ==
+The list of target groups which libraries created by env.!ComponentLibrary()
+should be added to.  Set to ['all_libraries'] by default.
+
+== COMPONENT_LIBRARY_DEBUG_SUFFIXES ==
+The list of file suffixes for library outputs which are necessary to debug
+the library.  Normally set up by the appropriate target_platform tool.
+
+== COMPONENT_LIBRARY_LINK_SUFFIXES ==
+The list of file suffixes for library outputs which are necessary to link
+against the library.  Normally set up by the appropriate target_platform tool.
+
+== COMPONENT_LIBRARY_PUBLISH ==
+Normally, shared libraries created by env.!ComponentLibrary() are not published
+directly to the staging directory, unless they are referenced directly or
+indirectly by a program or package (env.!ComponentProgram() or
+env.!ComponentPackage()).
+
+Set $COMPONENT_LIBRARY_PUBLISH to True for DLLs that
+should be published to the staging directory even if no programs linked against
+them (for example, a resource DLL).
+
+== COMPONENT_PACKAGE_FILTER ==
+List of components which should be filtered out of the component list when
+creating a package.  This is useful if a package should not include certain
+shared libraries, even though other programs or libraries in the package link
+against them.
+
+Usually, it's better to mask off these components at the source (that is,
+don't link against libraries which you're not going to include), since
+filtering them out at this stage runs the risk that the program won't run
+because it won't be able to find a shared library or resource it needs.
+
+== COMPONENT_PACKAGE_GROUPS ==
+The list of target groups which packages created by env.!ComponentPackage()
+should be added to.  Set to ['all_packages'] by default.
+
+== COMPONENT_PACKAGE_RESOURCES ==
+Map (dict) of resource type to destination directory, for resources which are
+copied by env.!ComponentPackage().  By default, copies the 'run' and 'debug'
+resources to $PACKAGE_DIR.
+
+== COMPONENT_PLATFORM_SETUP ==
+The function called by a component builder to modify the environment before
+calling the underlying SCons builder.  Normally set up by the target_platform
+tool.
+
+== COMPONENT_PROGRAM_GROUPS ==
+The list of target groups which programs created by env.!ComponentProgram()
+should be added to.  Set to ['all_programs'] by default.
+
+== COMPONENT_PROGRAM_RESOURCES ==
+Map (dict) of resource type to destination directory, for resources which are
+copied by env.!ComponentProgram().  By default, copies the 'run' and 'debug'
+resources to $STAGING_DIR.
+
+== COMPONENT_STATIC ==
+Determines whether object files created by env.!ComponentObject() and libraries
+created by env.!ComponentLibrary() are shared (dynamic) or static.  If
+$COMPONENT_STATIC is True, they will be static.  If False, they will be shared.
+
+Example:
+{{{
+# Force foo to be a static library (.a or .lib), not a DLL
+env.ComponentLibrary('foo', 'foo.cpp', COMPONENT_STATIC=True)
+}}}
+
+== COMPONENT_TEST_CMDLINE ==
+The command line used for the 'run' target created by
+env.!ComponentTestProgram().  This is also used by the env.ComponentVSProject()
+builder to construct the command line for the Visual Studio target project.
+
+Set to '${PROGRAM_NAME}' by default.
+
+== COMPONENT_TEST_ENABLED ==
+Provides an easy way to prevent a flaky or broken test from being run by the
+build system.
+
+If set to True, the 'run' target created by env.!ComponentTestProgram() will be
+placed into the groups in $COMPONENT_TEST_OUTPUT_GROUPS and the group for the
+test size ('run_large_tests', 'run_medium_tests', or 'run_small_tests').
+
+If set to False, the 'run' target will be placed only in the
+'run_disabled_tests' group.
+
+== COMPONENT_TEST_OUTPUT_GROUPS ==
+The list of target groups which test output (test running) created by
+env.!ComponentTestProgram() and/or env.!ComponentTestOutput() should be added
+to.
+Set to ['run_all_tests'] by default.
+
+See env.!ComponentTestOutput() for other variables which affect which group(s)
+a test is added to.
+
+== COMPONENT_TEST_PROGRAM_GROUPS ==
+The list of target groups which test programs created by
+env.!ComponentTestProgram() should be added to.  Set to ['all_test_programs'] by
+default.
+
+== COMPONENT_TEST_PROGRAM_RESOURCES ==
+Map (dict) of resource type to destination directory, for resources which are
+copied by env.!ComponentTestProgram().  By default, copies the 'run', 'debug',
+and 'test_input' resources to $TESTS_DIR.
+
+== COMPONENT_TEST_RUNNABLE ==
+Provides a way to keep a test program from being directly runnable at all.
+This is useful if you have a test which requires another sub-program to be
+present (for example, if you have a named pipe test which needs to start
+another process to talk to, but hammer should not attempt to run that
+sub-program directly).
+
+If set to True, env.!ComponentTestProgram() will create a 'run' target to run
+the test program.  Defaults to True.
