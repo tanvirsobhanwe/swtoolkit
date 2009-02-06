@@ -1,0 +1,267 @@
+#summary A List of Hammer specific SCons environment variables and methods.
+
+For general SCons environment variables and methods see:
+[http://scons.org/doc/latest/HTML/scons-man.html].
+
+* Contents*
+<wiki:toc max_depth="1" />
+
+* Contents (full listing) *
+<wiki:toc max_depth="3" />
+
+----
+<wiki:comment>
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+</wiki:comment>
+
+= Global Methods and Variables =
+
+== !AddSiteDir() ==
+Add a site directory, as if passed to the --site-dir option.
+
+Usage: `AddSiteDir(site_dir)`
+
+Args:
+   * site_dir: Site directory path to add, relative to the location of the SConstruct file.
+
+This may be called from the SConscript file to add a local site scons directory
+for a project.
+This does the following:
+   * Adds site_dir/site_scons to sys.path.
+   * Imports site_dir/site_init.py.
+   * Adds site_dir/site_scons to the SCons tools path.
+
+Example:
+{{{
+AddSiteDir('$SOURCE_ROOT/googleclient/foo/site_scons')
+}}}
+
+== !AddTargetGroup() ==
+Adds a target group, used for printing help.
+
+Usage: `AddTargetGroup(name, description)`
+
+Args:
+   * name: Name of target group.  This should be the name of an alias which points to other aliases for the specific targets.
+   * description: Description of the target group.  Should read properly when appended to 'The following ' - for example, 'programs can be built'.
+
+Target groups can be used in the following ways:
+   * Automatically printed in hammer help ('hammer -h').
+   * Can be specified on the command line to build all targets in the group.
+   * Can be referenced in a SConscript as env.Alias(name).
+   * Can be passed to the Visual Studio solution and source project builders.
+
+Example:
+{{{
+# Add the 'dinner' target group.  'hammer dinner' will build all targets in
+# the group.
+AddTargetGroup('dinner', 'dinner targets can be built.')
+AddTargetGroup('appetizers', 'appetizers can be built.')
+
+# Tell env.ComponentProgram() to add its targets to the 'dinner' group
+env.Append(COMPONENT_PROGRAM_GROUPS=['dinner'])
+
+# Build some programs.  They will be added to the 'dinner' group.
+env.ComponentProgram('beef', beef_inputs)
+env.ComponentProgram('cheese', cheese_inputs)
+
+# Whenever we build dinner, we also want to build all the appetizers
+env.Alias('dinner', env.Alias('appetizers'))
+}}}
+
+== !AddTargetHelp ==
+Adds SCons help for the targets, groups, and modes.  This is called
+automatically by !BuildEnvironments(); normally, you don't need to call
+this.
+
+== !BuildEnvironments() ==
+Build a collection of SConscripts under a collection of environments.
+
+Usage: `BuildEnvironments(environments)`
+
+Args:
+   * environments: List of SCons environments.
+
+Returns:
+   * List of environments which were actually evaluated (built).
+
+Only environments with $HOST_PLATFORMS containing the platform specified by
+--host-platform (or the native host platform, if --host-platform was not
+specified) will be matched.
+
+Each matching environment is checked against the modes passed to the --mode
+command line argument (or 'default', if no mode(s) were specified).  If any
+of the modes match the environment's $BUILD_TYPE or any of the environment's
+$BUILD_GROUPS, all the $BUILD_SCONSCRIPTS (and for legacy reasons,
+$BUILD_COMPONENTS) in that environment will be built.
+
+Example:
+{{{
+root_env = Environment(tools = ['component_setup'])
+
+windows_env = root_env.Clone(
+    tools = ['target_platform_windows'],
+    BUILD_SCONSCRIPTS = ['build.scons'],
+)
+
+windows_dbg_env = windows_env.Clone(
+    tools = ['target_debug'],
+    BUILD_TYPE = 'dbg',
+    BUILD_DESCRIPTION = 'Windows debug',
+    BUILD_GROUPS = ['default'],
+)
+
+windows_opt_env = windows_env.Clone(
+    tools = ['target_optimized'],
+    BUILD_TYPE = 'opt',
+    BUILD_DESCRIPTION = 'Windows optimized',
+)
+
+BuildEnvironments([
+    windows_dbg_env,
+    windows_opt_env,
+])
+}}}
+
+== !DeclareBit() ==
+Declares and describes the bit.
+
+Usage: `DeclareBit(bit_name, desc, exclusive_groups=None)`
+
+Args:
+   * bit_name: Name of the bit being described.
+   * desc: Description of bit.
+   * exclusive_groups: Bit groups which this bit belongs to.  At most one bit may be set in each exclusive group.  May be a string, list of string, or None.
+
+Adds a description for the bit in the global dictionary of bit names.  All
+bits must be described before being used in env.!Bit() / env.!AllBits() /
+env.!AnyBits().
+
+It is ok to declare a bit multiple times, as long as the description is
+identical.  Redeclaring a bit with a different description will cause an error
+(as well it should, since each bit should mean exactly one thing).
+
+By custom, bit names are lowercase-separated-by-dashes.  This is particularly
+useful when using env.!SetBitFromOption(), since that prefixes '--' and '--no-'
+to the bit name when creating the command line options.
+
+The target_platform tools declare a default set of bits for the platforms. For
+example, target_platform_linux declares 'linux' and 'posix' bits.
+
+Bits for a project are most commonly declared in main.scons.
+
+Tools which use bits (by calling the component_bits methods) should declare
+them in the tool's generate() function.
+
+Example:
+{{{
+# Declare the 'foo' bit
+DeclareBit('foo', 'Enable foo options')
+
+# Ok to declare the same bit somewhere else, as long as it has the same
+# description.
+DeclareBit('foo', 'Enable foo options')
+
+# The following will fail because the description is different
+DeclareBit('foo', 'Do something else')
+
+# Now that the bit is declared, you can use it with the other component_bits
+# methods.  For example, to customize an environment in main.scons before you
+# pass that environment to BuildEnvironments().
+
+# Subclass the windows build environment to make a 'win-foo' variant
+windows_foo_env = windows_env.Clone(BUILD_TYPE='win-foo',
+    BUILD_DESCRIPTION='Windows build, foo variant')
+windows_foo_env.SetBits('foo')
+}}}
+Then down in any SConscript, you can check for the 'foo' bit:
+{{{
+# Only include these inputs for 'foo' mode
+if env.Bit('foo'):
+  inputs += ['foo_only.cpp']
+}}}
+
+== !GetTargetGroups() ==
+Returns the dict of target groups, indexed by group name.
+
+Usage: `groups = !GetTargetGroups()`
+
+The values in this dict are !TargetGroup objects, which contain the
+following members:
+   * !TargetGroup.name: Name of the target group.
+   * !TargetGroup.description: Description of the group.
+   * !TargetGroup.!GetTargetNames(): Returns a list of target names in the
+     group.
+
+Note that !GetTargetGroups() will return incomplete information if called
+before !BuildEnvironments().
+
+!GetTargetGroups() is used internally by the component_targets_msvc tool.
+It might be useful for short-term debugging or in your own tool, but think hard
+before calling this from a SConscript - there's probably a better way to do
+what you want.
+
+== !GetTargetModes() ==
+Returns the dict of target modes, indexed by mode name.
+
+Usage: `modes = !GetTargetModes()`
+
+The values in this dict are !TargetMode objects, which contain the
+following members:
+   * !TargetMode.name: Name of the target mode.
+   * !TargetMode.!GetTargetNames(): Returns a list of target names in the
+     mode.
+
+In this context, 'mode' means one of the build environments which
+!BuildEnvironments() executed.  We should have called this method
+!GetTargetBuildEnvironments() - and probably will rename it to that in the
+future.
+
+Note that !GetTargetModes() will return incomplete information if called
+before !BuildEnvironments().
+
+!GetTargetModes() is used internally by the component_targets_msvc tool.
+It might be useful for short-term debugging or in your own tool, but think hard
+before calling this from a SConscript - there's probably a better way to do
+what you want.
+
+== !GetTargets() ==
+Returns the dict of targets, indexed by target name.
+
+Usage: `targets = !GetTargets()`
+
+The values in this dict are !Target objects, which contain the
+
+following members:
+   * Target.name: Name of the target.
+   * Target.properties: Dict of global properties for the target, indexed by property name.  The values are the property values.
+   * Target.mode_properties: Dict of mode-specific properties for the target, indexed by mode name, for only the modes where the target is built.  The values of this dict are mode-specific dicts of property values, indexed by property name.  (This is a dict of dicts.)
+
+In this context, 'mode' means one of the build environments which
+!BuildEnvironments() executed.
+
+Note that !GetTargets() will return incomplete information if called
+before !BuildEnvironments().
+
+!GetTargets() is used internally by the component_targets_msvc tool.
+It might be useful for short-term debugging or in your own tool, but think hard
+before calling this from a SConscript - there's probably a better way to do
+what you want.
+
+== HOST_PLATFORM ==
+Global variable containing the current host platform, currently one of
+   * 'WINDOWS'
+   * 'MAC'
+   * 'LINUX'
+This is used internally by the component_bits tool.  In general, you should
+use the host_windows, host_linux, and host_mac component bits rather than
+this variable.
+
+----
+<wiki:comment>
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+</wiki:comment>
