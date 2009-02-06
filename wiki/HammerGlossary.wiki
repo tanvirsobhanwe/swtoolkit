@@ -71,7 +71,7 @@ env.ComponentProgram('cheese', cheese_inputs)
 env.Alias('dinner', env.Alias('appetizers'))
 }}}
 
-== !AddTargetHelp ==
+== !AddTargetHelp() ==
 Adds SCons help for the targets, groups, and modes.  This is called
 automatically by !BuildEnvironments(); normally, you don't need to call
 this.
@@ -192,8 +192,7 @@ The values in this dict are !TargetGroup objects, which contain the
 following members:
    * !TargetGroup.name: Name of the target group.
    * !TargetGroup.description: Description of the group.
-   * !TargetGroup.!GetTargetNames(): Returns a list of target names in the
-     group.
+   * !TargetGroup.!GetTargetNames(): Returns a list of target names in the group.
 
 Note that !GetTargetGroups() will return incomplete information if called
 before !BuildEnvironments().
@@ -211,8 +210,7 @@ Usage: `modes = !GetTargetModes()`
 The values in this dict are !TargetMode objects, which contain the
 following members:
    * !TargetMode.name: Name of the target mode.
-   * !TargetMode.!GetTargetNames(): Returns a list of target names in the
-     mode.
+   * !TargetMode.!GetTargetNames(): Returns a list of target names in the mode.
 
 In this context, 'mode' means one of the build environments which
 !BuildEnvironments() executed.  We should have called this method
