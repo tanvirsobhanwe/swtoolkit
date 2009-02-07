@@ -2526,7 +2526,11 @@ This tool is automatically included by component_setup.
 -------------------------------------------------------------------------------
 </wiki:comment>
 
-= Hammer Command Line Options =
+= Command Line Options =
+
+These options can be passed to Hammer when run via hammer.sh or hammer.bat,
+or to SCons if the Software Construction Toolkit site-scons directory is
+copied directly into your project or specified via --site-dir.
 
 == --brief ==
 Reduces the amount of output from hammer.  Does not echo the full command lines
@@ -2580,3 +2584,222 @@ This and --brief are opposites.
 
 *Note:* Use --verbose in continuous builds; it makes it easier to check the
 command lines when there is a build error.
+
+----
+<wiki:comment>
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+</wiki:comment>
+
+SCons Variables Used by Software Contruction Toolkit
+
+Since Software Contruction Toolkit extends SCons, you can use any of the SCons
+builders and variables.  This section only lists the most common SCons
+variables, and/or SCons variables which are used in extended ways.
+
+== CC ==
+Name of the C compiler.
+
+== CCFLAGS ==
+List of flags to pass to the C and C++ compilers.
+
+== CPPDEFINES ==
+List of definitions to pass the C and C++ compilers.  These will be given the
+compiler-appropriate prefix (/D or -D).
+
+== CPPSUFFIXES ==
+List of file suffixes which are considered C source code by SCons.  Also used
+by the Visual Studio project builders in component_targets_msvs.
+
+== CXX ==
+Name of the C++ compiler.
+
+== CXXFILESUFFIX ==
+Suffix for a C++ file.  Used by env.!ConcatSource() to determine its output
+filename if no file suffix is specified.
+
+== ENV ==
+Dictionary containing the shell environment passed to subprocesses started by
+SCons.
+
+Note that SCons variables are not expanded in the shell environment.  See the
+examples below for how to work around this.
+
+Examples showing how to force SCons variable expansion:
+{{{
+# Add a directory to the path
+env.AppendENVPath('PATH', env.Dir('$MAIN_DIR/project_utils_bin').abspath)
+
+# Set the FOO_OPTIONS shell environment variable
+env['ENV']['FOO_OPTIONS'] = env.subst('--build-type=$BUILD_TYPE')
+}}}
+
+== LIBPATH ==
+List of directories to search for libraries when linking.
+
+== LIBS ==
+List of libraries to link against.
+
+Since all libraries should be in $LIBPATH by default, you should only need to
+specify the base name of the library, not its path or extension.  That is,
+use 'foo', not '$LIB_DIR/libfoo.a'.
+
+The env.!ComponentProgram() builder will transitively look through the list of
+libraries used to link the program when determining which libraries' resources
+need to be copied to the output directory.
+
+== LINKFLAGS ==
+List of flags to pass to the linker.
+
+== MSVSREBUILDCOM ==
+Rebuild command line used by the msvs tool.
+
+However, in Software Construction Toolkit, it's better to use the
+component_targets_msvs tool than to use SCons's built-in msvs tool.
+
+== OBJSUFFIX ==
+Suffix for static object files.
+
+== PDB ==
+For Windows, name of the PDB (debug information) file created when linking
+with debug enabled.
+
+== RPATH ==
+List of directories to search for shared libraries when running programs.
+
+== SHLIBSUFFIX ==
+Suffix for a shared library.  On Windows, this is the suffix of the runnable
+portion (i.e., '.dll'), not the import library ('.lib').
+
+== SHOBJSUFFIX ==
+Suffix for shared object files.
+
+----
+<wiki:comment>
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+</wiki:comment>
+
+= Other Terms =
+
+== build environment ==
+
+An environment which defines $BUILD_TYPE and $BUILD_TYPE_DESCRIPTION, and is
+passed to the !BuildEnvironments() call.
+
+Must be cloned from the root environment or one of its descendants.
+
+== component builder ==
+
+One of the builders from the component_builders tool, or a builder from another
+tool which acts like one of those builders (uses the same environment
+variables, creates target aliases in a similar way, etc.)
+
+== root environment ==
+
+The environment which includes the component_setup tool.  All other
+environments are cloned from the root environment (either directly, or as a
+clone-of-clone).
+
+== target_platform tool ==
+
+One of the tools starting with 'target_platform' (for example,
+'target_platform_windows') which sets up default environment tools and
+variables appropriate for that target platform.
+
+----
+<wiki:comment>
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+</wiki:comment>
+
+= Deprecated Terms =
+The following terms should be replaced by the current names when a SConscript
+file is updated.
+
+== Deprecated Global Methods ==
+
+=== !BuildComponents ===
+The old name for !BuildEnvironments().
+
+=== SConscript ===
+In hammer, use env.BuildSConscript() or env.ApplySConscript() instead.
+
+== Deprecated Environment Methods ==
+
+=== Copy ===
+Use env.Replicate() instead.
+
+Exception: If you are using env.Copy() as part of a multi-step builder, and
+modifying the destination file in-place, keep using env.Copy(), since
+env.Replicate() may use hard-linking.
+
+=== Install ===
+Use env.Replicate() instead.
+
+=== !InstallAs ===
+Use env.Replicate() instead.
+
+=== Library ===
+This SCons environment method still works, but doesn't hook in properly with
+the new hammer builders.
+Use env.!ComponentLibrary() instead.
+
+=== Object ===
+This SCons environment method still works, but doesn't hook in properly with
+the new hammer builders.
+Use env.!ComponentObject() instead.
+
+=== Program ===
+This SCons environment method still works, but doesn't hook in properly with
+the new component builders.
+Use env.!ComponentProgram() or env.!ComponentTestProgram() instead.
+
+=== !SharedLibrary ===
+This SCons environment method still works, but doesn't hook in properly with
+the new component builders.
+Use env.!ComponentLibrary(COMPONENT_STATIC=False) instead.
+
+=== !SharedObject ===
+This SCons environment method still works, but doesn't hook in properly with
+the new component builders.
+Use env.!ComponentObject(COMPONENT_STATIC=False) instead.
+
+=== !StaticLibrary ===
+This SCons environment method still works, but doesn't hook in properly with
+the new component builders.
+Use env.!ComponentLibrary(COMPONENT_STATIC=True) instead.
+
+=== !StaticObject ===
+This SCons environment method still works, but doesn't hook in properly with
+the new component builders.
+Use env.!ComponentObject(COMPONENT_STATIC=True) instead.
+
+== Deprecated Environment Variables ==
+
+=== # (hash) ===
+SCons uses this to mean the directory containing the SConstruct file.  Since
+this is evaluated in a different way than other environment variables, using
+`#`
+instead of $MAIN_DIR can cause unexpected behavior.
+Replaced in Software Construction Toolkit by $MAIN_DIR.
+
+=== BUILD_COMPONENTS ===
+The old name for $BUILD_SCONSCRIPTS.
+
+=== COMPONENT_LIBRARY_DIR ===
+The old name for $LIB_DIR.
+
+=== MODE ===
+The old name for the --mode command line option.
+
+=== PLATFORM ===
+SCons uses this to refer to the python platform which is running SCons.  It
+can be mapped to the host platform, but not tidily.  Use the 'host_windows',
+'host_mac', and 'host_linux' component bits instead.
+
+=== SCONSTRUCT_DIR ===
+The old name for MAIN_DIR.
