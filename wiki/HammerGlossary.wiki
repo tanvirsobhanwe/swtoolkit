@@ -1947,3 +1947,263 @@ Controls how target_platform_windows modifies its environment for the Visual
 Studio shell environment variables PATH, INCLUDE, and LIB.
    * If False, these variables are brought in from the shell environment in which hammer was called.  This is the default when hammer is run in a standalone environment.
    * If True, these variables are preserved around the env.Tool() invocations for the msvc, mslib, and mslink tools.  Those tools attempt to read the location of Visual Studio from the registry, so if their changes to the environment aren't blocked, it prevents hermetic builds from working properly.  This should be used if hammer is run in a hermetic build environment where build tools are checked in rather than locally installed.
+
+== OBJ_ROOT ==
+The root location where object files and other intermediate build artifacts are
+stored. It is typically `$TARGET_ROOT/obj` == `scons-out/$BUILD_TYPE/obj`,
+unless redefined.
+
+By default, generated files are placed in this directory in the same relative
+path from $OBJ_ROOT as their source files are from $MAIN_DIR.
+
+== PACKAGE_DIR ==
+Used internally by env.!ComponentPackage().
+
+== PACKAGE_NAME ==
+Used internally by env.!ComponentPackage().
+
+== PLATFORM_SDK_VC80_DIR ==
+Path to Visual Studio VC 8.0 SDK.
+
+== PRE_EVALUATE_DIRS ==
+List of directory variables which !BuildEnvironments() should evaluate for
+each build environment before calling all of that environment's
+$BUILD_SCONSCRIPTS.  This is a performance optimization.
+
+By default, this is set by component_setup to the following list:
+{{{
+[
+    'ARTIFACTS_DIR',
+    'DESTINATION_ROOT',
+    'OBJ_ROOT',
+    'SOURCE_ROOT',
+    'TARGET_ROOT',
+    'TOOL_ROOT',
+]
+}}}
+(Note that the variable names in this list are NOT prefixed with $)
+
+== PROGRAM_BASENAME ==
+Used internally by the component_builders tool.
+
+== PROGRAM_NAME ==
+Used internally by the component_builders tool.
+
+== PROJECT_NAME ==
+Used internally by the component_targets_msvs tool.
+
+== PROJECT_SOURCES ==
+Used internally by the component_targets_msvs tool.
+
+== PYTHON ==
+The python executable used to run hammer/SCons.
+
+== REPLACE_STRINGS ==
+List of pairs of regex search and replacement strings for env.!ReplaceStrings().
+The body of the source file has substitution performed on each pair
+(search_regex, replacement) in order.
+
+SCons variables in the replacement strings (but not regex search strings) are
+evaluated.
+
+== REPLICATE_REPLACE ==
+A list of pairs of regex search and replacement strings for env.Replicate().
+Each full destination path has substitution performed on each pair
+(search_regex, replacement) in order.
+
+Example:
+{{{
+env.Replicate('destdir', ['footxt.txt'],
+              REPLICATE_REPLACE = [('\\.txt', '.bar'), ('est', 'ist')])
+}}}
+will copy to 'distdir/footxt.bar'
+
+In the example above, note the use of `\\` to escape the '.' character,
+so that it doesn't act like the regexp '.' and match any character.
+
+== SDL_CPPPATH ==
+Platform specific header include paths required for the Simple !DirectMedia
+Layer Library.
+Typically set automatically by the sdl tool.
+Used by the sdl tool.
+
+== SDL_DIR ==
+Platform specific location of the Simple !DirectMedia Layer Library.
+Typically set automatically by the sdl tool.
+Used by the sdl tool.
+
+== SDL_FRAMEWORKPATH ==
+Framework paths required by the Simple !DirectMedia Layer Library on MacOS.
+Typically set automatically by the sdl tool.
+Used by the sdl tool.
+
+== SDL_FRAMEWORKS ==
+Frameworks required by the Simple Direct-Media Layer Library on MacOS.
+Typically set automatically by the sdl tool.
+Used by the sdl tool.
+
+== SDL_LIBPATH ==
+Platform specific library include paths required for the Simple !DirectMedia
+Layer Library.
+Typically set automatically by the sdl tool.
+Used by the sdl tool.
+
+== SDL_LIBS ==
+Platform specific libraries required for the Simple !DirectMedia Layer Library.
+Typically set automatically by the sdl tool.
+Used by the sdl tool.
+
+== SDL_VALIDATE_PATHS ==
+A list of string pairs. This first element of each pair is checked for
+existence to verify the presence of particular Simple !DirectMedia Layer
+components.
+Typically set automatically by the sdl tool.
+Used by the sdl tool.
+
+== SEVEN_ZIP ==
+Path to the 7zip executable.
+
+== SEVEN_ZIP_ARCHIVE_OPTIONS ==
+Command line options passed to 7zip by env.Archive7zip()
+
+== SEVEN_ZIP_COMPRESS_OPTIONS ==
+Command line options passed to 7zip by env.Compress7zip()
+
+== SEVEN_ZIP_DIR ==
+Directory where 7zip is installed.
+
+== SEVEN_ZIP_OUT_DIR ==
+Used internally by the seven_zip tool.
+
+== SEVEN_ZIP_PEEL_LAYERS ==
+If this variable is set to True, the !SevenZipEmitter pseudo-builder will
+extract the contents of a 7-zip archive compressed with 7-zip.
+If it is False, the archive will be uncompressed, but not extracted.
+Used by the seven_zip tool.
+
+== SHMANIFEST_COM ==
+On Windows, command line for running the manifest tool to add a manifest to a
+DLL.
+
+== SHMANIFEST_COMSTR ==
+On Windows, string to echo to the console when running the manifest tool on a
+DLL.
+
+== SIGNTOOL ==
+The path to the Microsoft signing tool.  Used by the code_signing tool.
+
+== SOLUTION_NAME ==
+Used internally by the component_targets_msvs tool.
+
+== SOLUTION_TARGETS ==
+Used internally by the component_targets_msvs tool.
+
+== SOURCE_ROOT ==
+The top-most source directory.
+
+This is frequently the base directory for your SCM client (for example,
+`//depot` for a perforce server).
+
+When referencing files from outside your project, reference them down from
+$SOURCE_ROOT, not up from your project using '..'.
+
+Example:
+{{{
+# Good
+env.Append(CPPPATH=['$SOURCE_ROOT/projects/foo'])
+
+# Bad
+env.Append(CPPPATH=['../foo'])
+}}}
+
+== STAGING_DIR ==
+The directory in which programs compiled by env.!ComponentProgram() will be
+output.
+
+By default, $STAGING_DIR is set to `$TARGET_ROOT/staging`.
+
+== TARGET_DEBUG ==
+Set to True if the current build environment is derived from target_debug.
+
+This is used internally by several hammer tools which can not access the
+component_bits methods.
+
+If you need to do something different in your SConscripts based on whether
+you're building in debug mode, use `env.Bit('debug')` instead.
+{{{
+# Good
+if env.Bit('debug'):
+
+# Bad
+if env.get('TARGET_DEBUG'):
+# It's particularly bad because it will silently fail if typo'd:
+if env.get('TARGET_DEBBUG'):
+# Worse (will crash if TARGET_DEBUG wasn't defined)
+if env['TARGET_DEBUG']:
+}}}
+
+== TARGET_NAME ==
+Used internally by component_targets_msvs.
+
+== TARGET_PATH ==
+Used internally by component_targets_msvs.
+
+== TARGET_PLATFORM ==
+Target platform name.
+
+This is used internally by several Software Construction Toollit tools which
+can not access the component_bits methods.
+
+If you need to do something different in your SConscripts based on the target
+platform, use the component_bits methods instead.
+{{{
+# Good
+if env.AnyBits('windows', 'mac'):
+if env.Bit('posix'):
+
+# Bad
+if env.get('TARGET_PLATFORM') in ('WINDOWS', 'MAC'):
+# It's particularly bad because it will silently fail if either the name or
+# value doesn't exactly match.  The following fails both ways:
+if env.get('TARGET_PLATFORMM') == 'Windows':
+# Worse (will crash if TARGET_PLATFORM wasn't defined)
+if env['TARGET_PLATFORM'] == 'LINUX':
+}}}
+
+== TARGET_ROOT ==
+The root location where build output for a particular BUILD_TYPE is placed.
+It is typically
+`$DESTINATION_ROOT/$BUILD_TYPE` == `scons-out/$BUILD_TYPE`, unless
+redefined.
+
+== TEST_OUTPUT_DIR ==
+When env.!ComponentTestProgram() creates a 'run' target for a test program to
+run the test, the output of that target will be placed in $TEST_OUTPUT_DIR
+
+By default, $TEST_OUTPUT_DIR is set to `$TARGET_ROOT/test_output`.
+
+== TESTS_DIR ==
+The directory in which test programs compiled by env.!ComponentTestProgram()
+will be output.
+
+By default, $TESTS_DIR is set to `$TARGET_ROOT/tests`.
+
+== THIRD_PARTY ==
+Directory containing third-party client code.
+
+This is usually defined relative to $SOURCE_ROOT, to make adding source or
+include paths from third-party code more portable, for example:
+`$SOURCE_ROOT/client/third_party`.
+
+== TIMESTAMP_SERVER ==
+Timestamp server for code signing.  Used by the code_signing tool.
+
+== TOOL_ROOT ==
+Common root location for tools outside of the current project directory.
+Normally set to $SOURCE_ROOT.
+
+(This is overridden by the internal hammer unit tests.  Normally, you don't
+need to alter this.)
+
+== VC80_DIR ==
+Path to directory containing Visual C++ 8.0.
