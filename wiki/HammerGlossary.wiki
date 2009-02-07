@@ -2518,3 +2518,65 @@ Adds the env.Solution() environment method.
 Adds hard link support for env.Install() and env.Replicate() on Windows.
 
 This tool is automatically included by component_setup.
+
+----
+<wiki:comment>
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+</wiki:comment>
+
+= Hammer Command Line Options =
+
+== --brief ==
+Reduces the amount of output from hammer.  Does not echo the full command lines
+which hammer executes.
+
+This and --verbose are opposites.  --brief is the default.
+
+Use --silent to turn off even more output.
+
+== --host-platform ==
+Forces hammer to use the specified platform as the host platform, instead of
+autodetecting the platform on which hammer is being run.
+
+Usually, hammer autodetects the host platform, so this option is not necessary.
+
+Useful for examining the dependency tree which would be created on another
+platform, but not useful for running the build because it'll attempt to use the
+wrong tools for your platform.
+
+== --mode ==
+Sets the build mode used by !BuildEnvironments() to control which build
+environment(s) are executed.  A mode is a build type set via $BUILD_TYPE, a
+build mode set via $BUILD_MODE, a group set via $BUILD_GROUPS, or a
+comma-delimited list of types and/or modes.
+
+We called this option --mode rather than having --type and --group options,
+since --mode can specify a single build type, a build group, or a combination
+thereof.
+
+== --retest ==
+Normally, hammer only re-runs tests when the test is recompiled or its inputs
+change.  This is handy when you want to 'hammer run_all_tests' and have it
+compile and re-run only the tests which could have been affected by whatever
+changes you've made to the source.
+
+Use the --retest option to force hammer to delete its cached test output and
+re-run the specified test(s).
+
+Used by the component_builders tool.
+
+== --site-path ==
+Specifies a comma-delimited list of site directories which SCons should
+include, as if individually passed to the SCons --site-dir option.  See the
+SCons --site-dir option for more details.
+
+== --verbose ==
+Increases the amount of output from hammer.  Echoes the full command lines
+which hammer executes.
+
+This and --brief are opposites.
+
+*Note:* Use --verbose in continuous builds; it makes it easier to check the
+command lines when there is a build error.
