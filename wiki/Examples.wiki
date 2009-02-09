@@ -1,6 +1,4 @@
-#summary Software Construction Toolkit Examples
-
-Examples of how to implement common tasks in .scons files.
+#summary Examples of common tasks in Software Construction Toolkit.
 
 * Contents*
 <wiki:toc max_depth="5" />
