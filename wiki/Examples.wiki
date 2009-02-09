@@ -1,12 +1,14 @@
-#summary Examples of common tasks in Software Construction Toolkit.
+#summary Software Construction Toolkit Examples
+
+Examples of how to implement common tasks in .scons files.
 
 * Contents*
 <wiki:toc max_depth="5" />
 
 ----
-<wiki:comment> ----------------------------------------------------------------
--------------------------------------------------------------------------------
---------------------------------------------------------------- </wiki:comment>
+<wiki:comment> ------------------------------------------------ </wiki:comment>
+<wiki:comment> ------------------------------------------------ </wiki:comment>
+<wiki:comment> ------------------------------------------------ </wiki:comment>
 = Environment setup =
 
 Most of this takes place in main.scons, unless otherwise noted.
@@ -163,9 +165,9 @@ hammer --mode=opt-coverage coverage
 }}}
 
 ----
-<wiki:comment> ----------------------------------------------------------------
--------------------------------------------------------------------------------
---------------------------------------------------------------- </wiki:comment>
+<wiki:comment> ------------------------------------------------ </wiki:comment>
+<wiki:comment> ------------------------------------------------ </wiki:comment>
+<wiki:comment> ------------------------------------------------ </wiki:comment>
 = Tasks in SConscripts =
 
 <wiki:comment> ------------------------------------------------ </wiki:comment>
@@ -324,7 +326,7 @@ env.ComponentTestOutput('run_bar', test_out)
 <wiki:comment> ------------------------------------------------ </wiki:comment>
 <wiki:comment> ------------------------------------------------ </wiki:comment>
 <wiki:comment> ------------------------------------------------ </wiki:comment>
-= TODO =
+= Examples Coming Soon =
 
 We know we need examples for the following:
    * App, console
@@ -347,7 +349,7 @@ We know we need examples for the following:
    * Include source from somewhere outside of the project using addRepository()
       * Recommend making a variable for the to- directory if you're referencing a lot
       * Note addRepository is global, so if you need to reference it more than one place in your Sconscripts, bubble it up to the highest level.
-   * Make a variant of a project (when to make a new mode vs. env.SetBitFromOption())
+   * Make a variant of a project (when to make a new mode vs. env.!SetBitFromOption())
    * Chain to a sub-build-script, such as an IDL compile script
    * Chain to a sub-build which is also in hammer
    * Call a custom python function to do something (show how to make a tool in your project's site_scons)
