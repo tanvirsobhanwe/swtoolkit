@@ -38,7 +38,7 @@ This does the following:
 
 Example:
 {{{
-AddSiteDir('$SOURCE_ROOT/googleclient/foo/site_scons')
+AddSiteDir('$SOURCE_ROOT/foo/site_scons')
 }}}
 
 == !AddTargetGroup ==
@@ -1094,8 +1094,8 @@ Args:
 
 Examples:
 {{{
-# Find relative path from $MAIN_DIR to $GOOGLE3
-relpath = env.RelativePath('$MAIN_DIR', '$GOOGLE3')
+# Find relative path from $MAIN_DIR to $SOURCE_ROOT/foo
+relpath = env.RelativePath('$MAIN_DIR', '$SOURCE_ROOT/foo')
 
 # Find relative path from 'foo.idl' to the obj directory matching the current
 # directory
@@ -1605,8 +1605,8 @@ Defaults to '$COMPONENT_VS_SOLUTION_DIR/projects'.
 
 == COMPONENT_VS_PROJECT_SCRIPT_NAME ==
 Name of the script which executes hammer.  Normally, projects have a hammer.bat
-file in the main project directory which chains to the hammer.bat in
-googleclient/tools/hammer.
+file in the main project directory which chains to Software Construction
+Toolkit's hammer.bat.
 
 Defaults to 'hammer.bat'.
 
