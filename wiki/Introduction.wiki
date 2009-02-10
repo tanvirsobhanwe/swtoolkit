@@ -28,6 +28,9 @@ tree to any directory.
 If you are using the hammer.bat or hammer.sh entry point, you also need to
 set up a SCONS_DIR environment variable to point to the directory containing
 SCons.
+  * For a normal SCons install, this is the `engine` subdir.
+  * For a scons-local install, this is the `.` subdir.
+  * For a scons-src install, this is the `src/engine` subdir.
 
 If you are modifying Software Construction Toolkit and need to run the unit
 tests, set up a SCONS_DEV_DIR environment variable to point to the directory
