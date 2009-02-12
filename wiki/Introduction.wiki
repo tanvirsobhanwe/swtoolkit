@@ -53,6 +53,7 @@ This package consists of the following:
 || README.software_construction_toolkit || Readme for the Software Construction Toolkit ||
 || hammer.bat || The entry point for Software Construction Toolkit on Windows. ||
 || hammer.sh || The entry point for Software Construction Toolkit on posix and unix-like systems, including Cygwin. ||
+|| history.txt || Change history for releases. ||
 || wrapper.py || A script which sits between the hammer entry points and SCons, which does some additional setup for invoking SCons in the context of the Software Construction Toolkit. ||
 || site_scons/ || Tools and modules for Software Construction Toolkit. ||
 || samples/ || Sample projects which demonstrate usage of the Software Construction Toolkit. ||
