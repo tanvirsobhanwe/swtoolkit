@@ -8,9 +8,9 @@
 = Introduction =
 
 The testing infrastructure for the Software Construction Toolkit is built on
-the testing infrastructure for SCons.  Since typically, build tools are
+the testing infrastructure for SCons.  Since build tools are typically 
 intertwined with their environment and external programs, the SCons
-infrastructure centers on end to end tests (aka large tests).  We have extended
+infrastructure centers on end-to-end functional tests.  We have extended
 the SCons infrastructure to enable both small tests and test coverage.
 
 Tests are located in the tests/ subdirectory.
@@ -76,7 +76,7 @@ All tests must import !TestFramework.
 import TestFramework
 }}}
 
-The SConscript file for your test is implemented in test as a function.  SCons
+The SConscript file for your test is implemented in the test as a function.  SCons
 globals that you need should be copied from the scons_globals dict.
 {{{
 def TestSConstruct(scons_globals):
@@ -108,7 +108,7 @@ The main routine does the following:
    * Optional: Check output files using the following functions:
       * test.must_exist(filename)
       * test.must_match(filename, expected_contents_string).
-   * Explcitly pass the test.  If this is not done, SCons's test framework records the test as NO RESULT.
+   * Explicitly pass the test.  If this is not done, SCons's test framework records the test as NO RESULT.
 {{{
 def main():
   test = TestFramework.TestFramework()
@@ -130,8 +130,8 @@ if __name__ == '__main__':
 
 Tests are classified by size:
    * Small test: Unit tests of modules / methods / classes (see below).
-   * Medium test: Tests which are end-to-end within SCons, or build a simple hello, world application.
-   * Large test: Tests building an entire application.
+   * Medium test: Tests which are end-to-end within SCons, or build a simple "hello, world" application.
+   * Large test: Tests which build an entire application.  Also called functional or end-to-end tests.
    * Smoke test: Tests run before each check-in.  Currently, this is all the small tests (`bin/runtest -a`).
 
 <wiki:comment> ------------------------------------------------ </wiki:comment>
