@@ -414,6 +414,81 @@ env.Append(LIBS=['foo'])
 env.ComponentTestProgram('foo_test', inputs)
 }}}
 
+<wiki:comment> ------------------------------------------------ </wiki:comment>
+== Include source from somewhere outside your project ==
+
+When you compile a source file inside your project, the object files goes in
+a matching location in $OBJ_ROOT.  For example,  If your build.scons file in
+your main project directory does:
+{{{
+env.ComponentLibrary('foo', ['foo.cc', 'bar/baz.cc'])
+}}}
+then the source files are $MAIN_DIR/foo.cc and $MAIN_DIR/bar/baz.cc, and the
+object files will be $OBJ_ROOT/foo.o and $OBJ_ROOT/bar/baz.o.
+
+But if the source file is outside your project (that is, not undernearth
+$MAIN_DIR), then SCons refers to it with an absolute path, and the object file
+will end up in the same directory as the source file.  For example,
+{{{
+env.ComponentLibrary('foo', ['../other/a.cc'])
+}}}
+will end up creating an object file ../other/a.o.
+
+That's not so good for several reasons:
+   * It pollutes your source tree with build output.
+   * If you build multiple modes at once ('hammer --mode=all'), then SCons has two ways to build ../other/a.o - one for debug, one for release.  This makes SCons unhappy.
+
+The way around this is to use SCons's addRepository() function to map the other
+directory down inside your project.  For example:
+{{{
+env.Dir('third_party/other').addRepository(env.Dir('../other'))
+
+env.ComponentLibrary('foo', ['third_party/other/a.cc'])
+}}}
+This will make an object file $OBJ_ROOT/third_party/other/a.o.
+
+Note that the effect of addRepository() is global in scope, so if you're
+referencing code from the repository in multiple build.scons files, it's better
+to put the addRepository() call in your main.scons.  It's also often handy to
+define a variable for repository destination, particularly if you also need to
+add it to the include paths.
+{{{
+env['OTHER_DIR'] = 'third_party/other'
+env.Dir('$OTHER_DIR').addRepository(env.Dir('../other'))
+
+env.Append(CPPPATH=['$OTHER_DIR']
+
+env.ComponentLibrary('foo', ['$OTHER_DIR/a.cc'])
+}}}
+
+<wiki:comment> ------------------------------------------------ </wiki:comment>
+== Make a build step depend on a component ==
+
+Components built by Software Construction toolkit component builders
+(env.!ComponentLibrary(), env.!ComponentProgram(), etc.) automatically set up
+aliases to refer to their outputs.
+
+If you need to express a dependency on one of those components, you can do it
+one of two ways.
+
+If the thing which depends on the component is in the same build.scons as the
+component builder call, you can directly use the list of output nodes returned
+by the builder call:
+{{{
+p = env.ComponentProgram('foo', foo_inputs)
+
+# Set up to run bar.bat
+cmdout = env.Command(['bar.out'], ['bar.sh'], '$SOURCE > $TARGET')
+
+# If bar.sh calls foo, we need to tell SCons that foo should be built first
+env.Depends(cmdout, p)
+}}}
+
+However, suppose that foo is built in some other build.scons file in some other
+directory.  To refer to foo's outputs, we can use the shortcut alias:
+{{{
+env.Depends(cmdout, env.Alias('foo'))
+}}}
 
 ----
 <wiki:comment> ------------------------------------------------ </wiki:comment>
@@ -433,9 +508,6 @@ We know we need examples for the following:
    * Target, where I need to compile some/all files with exceptions enabled
    * Code coverage
    * Visual Studio solution + projects
-   * Include source from somewhere outside of the project using addRepository()
-      * Recommend making a variable for the to- directory if you're referencing a lot
-      * Note addRepository is global, so if you need to reference it more than one place in your Sconscripts, bubble it up to the highest level.
    * Make a variant of a project (when to make a new mode vs. env.!SetBitFromOption())
    * Chain to a sub-build-script, such as an IDL compile script
    * Chain to a sub-build which is also in hammer
