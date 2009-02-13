@@ -301,6 +301,70 @@ env.ComponentProgram('my_program', inputs)
 }}}
 
 <wiki:comment> ------------------------------------------------ </wiki:comment>
+== Build a test program ==
+
+This example shows a test for the foo library.
+{{{
+# Inputs for all platforms
+inputs = [
+    'foo_test.cc',
+]
+
+env.Append(LIBS=['foo'])
+env.ComponentTestProgram('foo_test', inputs)
+}}}
+Note that typing 'hammer run_foo_test' will build _and_ run the test.
+
+Here's another example which will copy a.jpg to the test directory before
+running the test:
+{{{
+# Inputs for all platforms
+inputs = [
+    'foo_test.cc',
+]
+
+env.Append(LIBS=['foo'])
+env.ComponentTestProgram('foo_test', inputs)
+env.Publish('foo_test', 'test_input', 'a.jpg')
+}}}
+
+<wiki:comment> ------------------------------------------------ </wiki:comment>
+== Build a test program with a helper ==
+
+Some tests need another program to assist in the test.  For example, to test
+a network library, you may need a helper program which listens on a socket so
+the network library has something to connect to.
+
+The helper program should also use env.!ComponentTestProgram(), but should set
+COMPONENT_TEST_RUNNABLE=False so that Hammer won't attempt to run it separately
+from the test which requires it.
+
+Use env.Depends() to make SCons compile the helper when the test itself is
+compiled.  Note that the test name is actually an alias, so we need to
+pass it to env.Alias() before passing it to env.Depends().  (Hammer
+automatically creates aliases for components, since it's easier to type
+`hammer my_net_test` than `hammer scons-out/dbg/tests/my_net_test.exe`.)
+
+{{{
+# Inputs for all platforms
+inputs = [
+    'my_net_test.cc',
+]
+
+env.Append(LIBS=['my_net'])
+env.ComponentTestProgram('my_net_test', inputs)
+
+# Helper program
+p = env.ComponentTestProgram('my_net_helper', ['net_helper.cc'],
+                             COMPONENT_TEST_RUNNABLE=False)
+
+# Tell SCons that my_net_test needs my_net_helper
+env.Depends(env.Alias('my_net_test'), p)
+}}}
+Now, 'hammer run_my_net_test' will build both my_net_test and my_net_helper
+before running my_net_test.
+
+<wiki:comment> ------------------------------------------------ </wiki:comment>
 == Run an external unit test ==
 
 This example shows how to run a unit test program which was not built by
@@ -321,6 +385,35 @@ test_out = env.Command(['bar.out'], ['bar.py'], '$PYTHON $SOURCE > $TARGET')
 # Add 'run_bar' as an alias for running that test.
 env.ComponentTestOutput('run_bar', test_out)
 }}}
+Note the use of the $PYTHON variable in this example; Hammer translates that
+into the python executable used to run Hammer itself, which is handy if you
+have multiple versions of python on your system, or if python isn't in your
+shell path.
+
+<wiki:comment> ------------------------------------------------ </wiki:comment>
+== Disable a test program ==
+
+Sometimes you need to temporarily disable a unit test so it's not run when you
+`hammer run_all_tests`, but you still want to make sure it compiles.
+
+This example shows disabling running a test on Windows.  Running
+`hammer all_test_programs` will still compile the test, but
+on Windows, `hammer run_all_tests` will not run the test.  Running
+`hammer run_disabled_tests` will run the test.
+{{{
+# Inputs for all platforms
+inputs = [
+    'foo_test.cc',
+]
+
+# Temporarily disable test on Windows; it's flaky there.
+if env.Bit('windows'):
+  env['COMPONENT_TEST_ENABLED'] = False
+
+env.Append(LIBS=['foo'])
+env.ComponentTestProgram('foo_test', inputs)
+}}}
+
 
 ----
 <wiki:comment> ------------------------------------------------ </wiki:comment>
@@ -331,15 +424,9 @@ env.ComponentTestOutput('run_bar', test_out)
 We know we need examples for the following:
    * App, console
    * App, windowed
-   * Test program
    * Test program, windowed
    * Create a smoke test group
-   * Helper for a test program
-      * That is, a program which assists a test program, but is not itself directly runnable.  For example, a test server such as a program which listens on a named pipe.
-      * Also note use of $PYTHON and that the outputs should depend on the test script if it's not part of the inputs/sources.)
-   * Disable a test program
    * Small test program
-   * Add resources to a program
    * Mac app bundle
    * Browser plugin (mac / activeX / npapi / moz)
    * Target, where I need to compile some files with different options
@@ -353,5 +440,4 @@ We know we need examples for the following:
    * Chain to a sub-build-script, such as an IDL compile script
    * Chain to a sub-build which is also in hammer
    * Call a custom python function to do something (show how to make a tool in your project's site_scons)
-   * Test program which needs additional input (env.Publish() it)
    * Checked-in third-party library (needs to env.Publish() itself for running, ala third_party.scons)
