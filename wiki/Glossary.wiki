@@ -1948,6 +1948,12 @@ Studio shell environment variables PATH, INCLUDE, and LIB.
    * If False, these variables are brought in from the shell environment in which hammer was called.  This is the default when hammer is run in a standalone environment.
    * If True, these variables are preserved around the env.Tool() invocations for the msvc, mslib, and mslink tools.  Those tools attempt to read the location of Visual Studio from the registry, so if their changes to the environment aren't blocked, it prevents hermetic builds from working properly.  This should be used if hammer is run in a hermetic build environment where build tools are checked in rather than locally installed.
 
+== NACL_SDK_VALIDATE ==
+Determines whether the naclsdk tool validates the presence of the Native 
+Client SDK.  
+   * If '1' (the default), checks for the SDK.
+   * If '0', does not check.
+        
 == OBJ_ROOT ==
 The root location where object files and other intermediate build artifacts are
 stored. It is typically `$TARGET_ROOT/obj` == `scons-out/$BUILD_TYPE/obj`,
@@ -2052,6 +2058,14 @@ Used by the sdl tool.
 Platform specific libraries required for the Simple !DirectMedia Layer Library.
 Typically set automatically by the sdl tool.
 Used by the sdl tool.
+
+== SDL_MODE ==
+Mode for running SDL.  
+  * If 'local', looks for a local install of SDL.
+  * If 'hermetic' (the default), assumes SDL is installed in one of
+    $SDL_HERMETIC_WINDOWS_DIR, $SDL_HERMETIC_MAC_DIR, or 
+    $SDL_HERMETIC_LINUX_DIR, depending on the current platform.
+  * If 'none', assumes SDL is not present at all.
 
 == SDL_VALIDATE_PATHS ==
 A list of string pairs. This first element of each pair is checked for
