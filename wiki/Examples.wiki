@@ -462,6 +462,106 @@ env.ComponentLibrary('foo', ['$OTHER_DIR/a.cc'])
 }}}
 
 <wiki:comment> ------------------------------------------------ </wiki:comment>
+== Include a single source file from somewhere outside your project ==
+
+Another way of handling source files from outside your project is to
+compile them using !ComponentObject() and explicitly specify the name of
+the output object file.  Make sure that if you specify options to
+!ComponentLibrary() such as COMPONENT_STATIC=False, that you specify the same
+options to !ComponentObject().
+{{{
+# Explicitly specify the object file
+obj = env.ComponentObject('a_from_other', ['../other/a.cc'])
+
+# Now link the object file into the real target
+env.ComponentLibrary('foo', [obj])
+}}}
+Because of the needs to explicitly name the object file and keep the options
+to !ComponentObject() and !ComponentLibrary() the same, this isn't as clean a
+solution as using addRepository() (see the previous example).
+
+<wiki:comment> ------------------------------------------------ </wiki:comment>
+== Use a source file in more than one target ==
+
+Sometimes it's necessary to compile the same source file into multiple targets.
+For example, you may have a source that you want to compile into a unit test
+for that source, but you can't link against the entire library containing that
+source, or it's a shared library which doesn't export the symbols you need to
+link against.
+
+If you try doing this the simple way:
+{{{
+env.ComponentLibrary('foo', ['a.c', 'foo.c'])
+env.ComponentLibrary('bar', ['a.c', 'bar.c'])
+}}}
+SCons will complain that there are multiple ways of building the object file
+(a.obj, a.o, or a.so, depending on your platform).
+
+There are a few ways of dealing with this.
+
+1. Compile the shared file(s) to object(s) first.  This is easiest if both
+consumers of the object file are in the same (or closely affiliated)
+SConscripts, and compile the source with the same command line options.
+{{{
+# Since the same options need to be passed to both the ComponentObject() call
+# and the ComponentLibrary() calls, it's tidier to set them in the environment.
+env['COMPONENT_STATIC'] = False
+
+# Compile the file into an object
+a_obj = env.ComponentObject('a.c')
+env.ComponentLibrary('foo', [a_obj, 'foo.c'])
+env.ComponentLibrary('bar', [a_obj, 'bar.c'])
+}}}
+This also works properly if !ComponentObject() is passed a list of sources - in
+that case, a_obj will be a list of the corresponding objects.
+
+1a. Another way of passing the object files to sub-environments using
+environment variables.  This is handy if the shared files are high up in the
+tree and used by numerous leaves in the tree.
+
+In some parent SConscript:
+{{{
+env['A_SHARED_OBJ'] = env.ComponentObject('a.c')
+}}}
+
+In some other SConscript(s):
+{{{
+env.ComponentLibrary('foo', ['foo.c', '$A_SHARED_OBJ'])
+env.ComponentLibrary('bar', ['bar.c', '$A_SHARED_OBJ'])
+}}}
+
+2. Change $SHOBJSUFFIX (or $OBJSUFFIX, if compiling static) for one of the
+targets.
+{{{
+env.ComponentLibrary('foo', ['a.c', 'foo.c'])
+
+env2 = env.Clone()
+env2.Append(CPPDEFINES=['SOMEFLAG'])
+env2.ComponentLibrary('bar', ['a.c', 'bar.c'],
+                      OBJSUFFIX='_bar' + env['OBJSUFFIX'],
+                      SHOBJSUFFIX='_bar' + env['SHOBJSUFFIX'])
+}}}
+This will cause the source file(s) to be compiled twice, but with different
+object file names.  This is necessary if the targets have different compiler
+options.
+
+3. Compile the common files as a static library, and link the other libs
+against it.
+{{{
+env.ComponentLibrary('foobar_shared', 'a.c', COMPONENT_STATIC=True)
+env.Append(LIBS=['foobar_shared'])
+env.ComponentLibrary('foo', 'foo.c', COMPONENT_STATIC=False)
+env.ComponentLibrary('bar', 'bar.c', COMPONENT_STATIC=False)
+}}}
+This is convenient if the number of shared sources and/or the number of
+components using them are large, and works well if the users are in very
+different parts of the source tree.  It's also a great opportunity to write
+unit tests for foobar_shared, since those files apparently represent a distinct
+shared interface.  However, if any of the targets which use the shared file are
+themselves static libraries, you need to remember to link the users of those
+static libraries with foobar_shared as well.
+
+<wiki:comment> ------------------------------------------------ </wiki:comment>
 == Make a build step depend on a component ==
 
 Components built by Software Construction toolkit component builders
@@ -490,6 +590,29 @@ directory.  To refer to foo's outputs, we can use the shortcut alias:
 env.Depends(cmdout, env.Alias('foo'))
 }}}
 
+<wiki:comment> ------------------------------------------------ </wiki:comment>
+== Compile one source file with different options than the others ==
+
+Sometimes you need to compile one source file for a target with different
+options than the other files.  For example, that file may not work well with
+optimization enabled.  Use the !ComponentObject() builder to compile that file
+into an object file, then include the object file with the rest of the source.
+
+{{{
+inputs = ['a.c', 'b.c', 'foo.c']
+
+# bar.c doesn't compile with -O2, so use -O1
+envbar = env.Clone()
+if '-O2' in envbar.SubstList2('$CCFLAGS'):
+  envbar.FilterOut(CCFLAGS=['-O2'])
+  envbar.Append(CCFLAGS=['-O1'])
+inputs += envbar.ComponentObject('bar.c')
+
+env.ComponentLibrary('foo', inputs)
+}}}
+Note that we used !SubstList2() to evaluate CCFLAGS, since it properly flattens
+sublists of options and evaluates text variables inside options.
+
 ----
 <wiki:comment> ------------------------------------------------ </wiki:comment>
 <wiki:comment> ------------------------------------------------ </wiki:comment>
@@ -504,7 +627,6 @@ We know we need examples for the following:
    * Small test program
    * Mac app bundle
    * Browser plugin (mac / activeX / npapi / moz)
-   * Target, where I need to compile some files with different options
    * Target, where I need to compile some/all files with exceptions enabled
    * Code coverage
    * Visual Studio solution + projects
