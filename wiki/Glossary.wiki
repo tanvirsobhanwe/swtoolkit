@@ -1217,7 +1217,7 @@ Example:
 env.SetBitFromOption('dice', True)
 }}}
 
-== SetBits ==
+== !SetBits ==
 Sets the bits in the environment.
 
 Usage: `env.SetBits(bits)`
