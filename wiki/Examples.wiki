@@ -615,6 +615,33 @@ sublists of options and evaluates text variables inside options.
 
 ----
 <wiki:comment> ------------------------------------------------ </wiki:comment>
+== Write a string to a file ==
+
+If you need to write a string to a file as part of your build, you may be
+tempted to use python to write it directly, as part of your SConscript.  Doing
+this works, but has two nasty side-effects:
+  * SCons doesn't know about the file, so may not properly rebuild it.
+  * Even if you run hammer with the `-n` option to 'do nothing', your build will still write the file.
+
+One way around this is to use the !ReplaceString() builder to modify a template
+file.
+
+Another way is to move the code which does the writing into a subroutine, and
+call it via env.Command():
+{{{
+def WriteLog(target, source, env):
+  f = open(str(target), "w")
+  f.write(env['write_data'])
+  f.close()
+  return 0
+
+# Write 'thing to write' to the foo file in the staging directory
+env.Command('$STAGING_DIR/foo', [], WriteLog, write_data='thing to write')
+}}}
+
+
+----
+<wiki:comment> ------------------------------------------------ </wiki:comment>
 <wiki:comment> ------------------------------------------------ </wiki:comment>
 <wiki:comment> ------------------------------------------------ </wiki:comment>
 = Examples Coming Soon =
