@@ -1588,8 +1588,25 @@ env.!ComponentTestOutput().  Defaults to 'large'.
 
 == COMPONENT_TEST_SUBSYSTEM_WINDOWS ==
 Controls whether tests on Windows are console or windowed applications.  
-  * If set to False (the default), tests are console apps.
-  * If set to True, tests are windowed apps.
+
+If set to False (the default), tests are console apps.  This does the following in target_platform_windows.py:
+{{{
+    env.FilterOut(
+        CPPDEFINES=['_WINDOWS'],
+        LINKFLAGS=['/SUBSYSTEM:WINDOWS'],
+    )
+    env.Append(
+        CPPDEFINES=['_CONSOLE'],
+        LINKFLAGS=['/SUBSYSTEM:CONSOLE'],
+    )
+}}}
+
+If set to True, the settings for $CPPDEFINES and $LINKFLAGS are not modified.
+
+This provides a way for your applications to be windowed by default (that is, set 
+`CPPDEFINES=['_WINDOWS']` and `LINKFLAGS=['/SUBSYSTEM:WINDOWS']`) while keeping your test apps console apps.
+
+Admittedly this isn't the cleanest workaround.
 
 == COMPONENT_TEST_TIMEOUT ==
 A dict containing the timeouts in seconds for component tests by size.
