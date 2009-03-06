@@ -1586,6 +1586,11 @@ the test program.  Defaults to True.
 The size for tests created by env.!ComponentTestProgram() and/or
 env.!ComponentTestOutput().  Defaults to 'large'.
 
+== COMPONENT_TEST_SUBSYSTEM_WINDOWS ==
+Controls whether tests on Windows are console or windowed applications.  
+  * If set to False (the default), tests are console apps.
+  * If set to True, tests are windowed apps.
+
 == COMPONENT_TEST_TIMEOUT ==
 A dict containing the timeouts in seconds for component tests by size.
 
