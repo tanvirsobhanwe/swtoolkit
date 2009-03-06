@@ -665,7 +665,35 @@ env.ComponentLibrary('foo', inputs)
 Note that we used !SubstList2() to evaluate CCFLAGS, since it properly flattens
 sublists of options and evaluates text variables inside options.
 
-----
+<wiki:comment> ------------------------------------------------ </wiki:comment>
+== Enable exceptions for some source files ==
+
+Compiling most files with exceptions disabled and some with exceptions enabled
+was a common enough pattern in our projects we have a variable which changes
+the compiler and linker flags.
+
+To disable exceptions by default, put in your main.scons:
+{{{
+# For your windows environment
+windows_env.Append(CPPDEFINES = ['_HAS_EXCEPTIONS=0'])
+
+# For your posix environments (assuming mac and linux environments derive from
+# this common posix ancestor; if not, put in each environment).
+posix_env.Append(CCFLAGS = ['-fno-exceptions'])
+}}}
+
+Then in the SConscript where you need to compile a file with exceptions:
+{{{
+inputs = ['a.cc', 'b.cc', 'foo.cc']
+
+# bar.cpp needs to compile with exceptions
+inputs += env.ComponentObject('bar.cc', ENABLE_EXCEPTIONS=True)
+
+env.ComponentLibrary('foo', inputs)
+}}}
+(Of course, if you needed to enable exceptions for the entire library, you'd
+just set `env['ENABLE_EXCEPTIONS'] = True` for the entire file)
+
 <wiki:comment> ------------------------------------------------ </wiki:comment>
 == Write a string to a file ==
 
@@ -699,11 +727,8 @@ env.Command('$STAGING_DIR/foo', [], WriteLog, write_data='thing to write')
 = Examples Coming Soon =
 
 We know we need examples for the following:
-   * App, console
-   * App, windowed
    * Mac app bundle
    * Browser plugin (mac / activeX / npapi / moz)
-   * Target, where I need to compile some/all files with exceptions enabled
    * Code coverage
    * Visual Studio solution + projects
    * Make a variant of a project (when to make a new mode vs. env.!SetBitFromOption())
