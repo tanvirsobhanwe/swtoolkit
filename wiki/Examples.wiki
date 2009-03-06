@@ -329,6 +329,23 @@ env.Publish('foo_test', 'test_input', 'a.jpg')
 }}}
 
 <wiki:comment> ------------------------------------------------ </wiki:comment>
+== Set the size for a test program ==
+
+Test programs have a size, which affects the timeout for the test as well as
+which run-alias it goes into.  Use the COMPONENT_TEST_SIZE variable to change
+the test size:
+{{{
+inputs = [
+    'foo_test.cc',
+]
+
+env.ComponentTestProgram('foo_test', inputs, COMPONENT_TEST_SIZE='small')
+}}}
+foo_test is now a small test.  It has a test timeout set via
+`env['COMPONENT_TEST_TIMEOUT']['small']`, and will be run as part of
+`hammer run_small_tests`.
+
+<wiki:comment> ------------------------------------------------ </wiki:comment>
 == Build a test program with a helper ==
 
 Some tests need another program to assist in the test.  For example, to test
@@ -413,6 +430,41 @@ if env.Bit('windows'):
 env.Append(LIBS=['foo'])
 env.ComponentTestProgram('foo_test', inputs)
 }}}
+
+<wiki:comment> ------------------------------------------------ </wiki:comment>
+== Make a new test group ==
+
+By default tests are categorized by size ($COMPONENT_TEST_SIZE) and whether
+they are enabled ($COMPONENT_TEST_ENABLED).  It can also be handy to create
+different subgroups of tests (for example, layout tests or smoke tests).
+
+First, set up your test group.  This is usually done in main.scons, since it
+only needs to happen once.  Note that we need to add groups to both build and
+run the tests.
+{{{
+AddTargetGroup('smoke_tests', 'smoke tests can be built')
+AddTargetGroup('run_smoke_tests', 'smoke tests can be run')
+}}}
+This also tells hammer's help system about these groups, so that `hammer -h`
+will print your test groups if they're not empty.
+
+Then for each test which should belong to the new group, add it to the
+appropriate groups:
+{{{
+inputs = [
+    'foo_test.cc',
+]
+
+env.Append(
+    COMPONENT_TEST_PROGRAM_GROUPS=['smoke_tests'],
+    COMPONENT_TEST_OUTPUT_GROUPS=['run_smoke_tests'],
+)
+
+env.ComponentTestProgram('foo_test', inputs)
+}}}
+Note that the effects of `env['COMPONENT_TEST_ENABLED'] = False` take effect
+before adding the test to its output groups, so if you disable a test, it will
+also disappear from your test group.
 
 <wiki:comment> ------------------------------------------------ </wiki:comment>
 == Include source from somewhere outside your project ==
@@ -649,9 +701,6 @@ env.Command('$STAGING_DIR/foo', [], WriteLog, write_data='thing to write')
 We know we need examples for the following:
    * App, console
    * App, windowed
-   * Test program, windowed
-   * Create a smoke test group
-   * Small test program
    * Mac app bundle
    * Browser plugin (mac / activeX / npapi / moz)
    * Target, where I need to compile some/all files with exceptions enabled
