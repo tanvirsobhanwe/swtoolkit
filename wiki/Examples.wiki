@@ -710,7 +710,7 @@ Another way is to move the code which does the writing into a subroutine, and
 call it via env.Command():
 {{{
 def WriteLog(target, source, env):
-  f = open(str(target), "w")
+  f = open(str(target[0]), "w")
   f.write(env['write_data'])
   f.close()
   return 0
