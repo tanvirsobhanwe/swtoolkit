@@ -2283,6 +2283,10 @@ The coverage output will be in lcov format at: $COVERAGE_OUTPUT_FILE.
 Additionally on Linux/Mac, a coverage html report will be generated at
 $COVERAGE_HTML_DIR.
 
+Note that on Windows, only some versions of Visual Studio (such as the 
+team edition) come with the !VsPerfCmd.exe utility required to process
+coverage data.
+
 == code_signing ==
 Code signing build tool.  Adds the env.!SignedBinary() method.
 
