@@ -719,6 +719,17 @@ def WriteLog(target, source, env):
 env.Command('$STAGING_DIR/foo', [], WriteLog, write_data='thing to write')
 }}}
 
+<wiki:comment> ------------------------------------------------ </wiki:comment>
+== Refer to a program in the staging directory ==
+
+Normally when you create a program via !ComponentProgram(), it's compiled in a subdir of $OBJ_ROOT, and then published (linked) into $STAGING_DIR.
+
+To refer to the program file link in the staging dir, use the following:
+{{{
+env.ComponentProgram('foo', foo_inputs)
+
+foo_in_staging = env.File('$STAGING_DIR/${PROGPREFIX}foo${PROGSUFFIX}')
+}}}
 
 ----
 <wiki:comment> ------------------------------------------------ </wiki:comment>
