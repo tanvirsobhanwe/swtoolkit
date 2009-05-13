@@ -513,6 +513,28 @@ env.Append(CPPPATH=['$OTHER_DIR']
 env.ComponentLibrary('foo', ['$OTHER_DIR/a.cc'])
 }}}
 
+Note also that addRepository() only maps files it can't find in your project
+dir.  So if you have:
+{{{
+    your_project_dir/
+      main.scons
+      foo/
+        foo.scons
+        a.cc
+    third_party/
+      foo/
+        a.cc
+        b.cc
+        c.cc
+}}}
+and you do 
+{{{
+env.Dir('foo').addRepository(env.Dir('../third__party/foo'))
+}}}
+then your_project_dir/foo/foo.scons can act like it has a.cc, b.cc, and c.cc
+all in its directory.  Since a.cc is present in your_project_dir/foo/, this
+will be used instead of the a.cc in third_party/foo/.
+
 <wiki:comment> ------------------------------------------------ </wiki:comment>
 == Include a single source file from somewhere outside your project ==
 
