@@ -189,6 +189,30 @@ if env.Bit('foo'):
   inputs += ['foo_only.cpp']
 }}}
 
+== !FilterEnvironments ==
+Filters a list of environments to those matching the current platform and
+mode.
+
+Usage: `filtered_envs = FilterEnvironments(environments)`
+
+Args:
+   * environments: List of SCons environments.
+
+Returns:
+   * List of environments which match the current platform and mode.
+
+Only environments with $HOST_PLATFORMS containing the platform specified by
+--host-platform (or the native host platform, if --host-platform was not
+specified) will be matched.
+
+Each matching environment is checked against the modes passed to the --mode
+command line argument (or 'default', if no mode(s) were specified).  If any
+of the modes match the environment's $BUILD_TYPE or any of the environment's
+$BUILD_GROUPS, all the $BUILD_SCONSCRIPTS (and for legacy reasons,
+$BUILD_COMPONENTS) in that environment will be returned.
+
+!FilterEnvironments() is called internally by !BuildEnvironments().
+
 == !GetTargetGroups ==
 Returns the dict of target groups, indexed by group name.
 
@@ -1007,8 +1031,40 @@ first.
 
 Example:
 {{{
-def DeferGetPublished(env):
+def DeferGetTestXml(env):
    xml_files = env.GetPublished('test', 'xml')
+
+env.Defer(DeferGetTestXml)
+}}}
+
+== !GetPublishedWithSubdirs ==
+Returns a list of the published resources of the specified type, with the 
+subdir for each resource.
+
+Usage: `env.GetPublishedWithSubdirs(group_name, resource_type)`
+
+Args:
+   * group_name: Name of resource group, or a list of names of resource groups.
+   * resource_type: Type of resources (string), or a list of resource types.
+
+Returns a flattened list of 2-tuples with the source nodes from calls to 
+Publish() for the specified group and resource type.  Each entry in the list
+contains (source, subdir).  Returns an empty list if there are no matching 
+resources.
+
+env.!GetPublishedWithSubdirs() is usually used in a function which is deferred 
+via env.Defer(), so that all other SConscripts have a chance to publish 
+resources first.
+
+Example:
+{{{
+def DeferGetTestXml(env):
+  xml_files = env.GetPublishedWithSubdirs('test', 'xml')
+  for src, subdir in xml_files:
+    if subdir:
+      print 'test: %s goes in subdir %s' % (src, subdir)
+    else:
+      print 'test: %s goes in the main resource dir' % src
 
 env.Defer(DeferGetTestXml)
 }}}
@@ -2454,6 +2510,7 @@ Support for publishing and consuming lists of nodes.
 
 Adds the following environment methods:
    * env.!GetPublished()
+   * env.!GetPublishedWithSubdirs()
    * env.Publish()
    * env.!ReplicatePublished()
 
