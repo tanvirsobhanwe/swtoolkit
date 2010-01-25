@@ -2046,8 +2046,15 @@ Used internally by env.!ComponentPackage().
 == PACKAGE_NAME ==
 Used internally by env.!ComponentPackage().
 
+== PLATFORM_SDK_DIR ==
+Path to preferred Platform SDK.
+Currently you must explicitly set this up yourself.
+(Not auto-detected)
+
 == PLATFORM_SDK_VC80_DIR ==
 Path to Visual Studio VC 8.0 SDK.
+Currently you must explicitly set this up yourself.
+(Not auto-detected)
 
 == PRE_EVALUATE_DIRS ==
 List of directory variables which !BuildEnvironments() should evaluate for
