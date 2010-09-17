@@ -1,0 +1,5 @@
+# This file is used by gcl to get repository specific information.
+CODE_REVIEW_SERVER: codereview.chromium.org
+#CC_LIST: no-list
+VIEW_VC: http://code.google.com/p/swtoolkit/source/detail?r=
+TRY_ON_UPLOAD: False
