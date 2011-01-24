@@ -1881,6 +1881,8 @@ name of aliases.
 You would typically adjust this to exclude tests from coverage runs.
 Used by the code_coverage tool.
 
+NOTE: when running under coverage (particularly on windows) you need to invoke with --mode=MYCOVMODE coverage, in order for vspermon to be started at the right time.
+
 By default: ['run_all_tests']
 
 == COVERAGE_VSINSTR ==
