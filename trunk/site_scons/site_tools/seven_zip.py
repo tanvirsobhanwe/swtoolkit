@@ -33,6 +33,7 @@
 
 
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -54,9 +55,10 @@ def SevenZipGetFiles(env, source):
   cmd = env.subst('$SEVEN_ZIP l "%s"' % source)
   # Run it and capture output.
   output = subprocess.Popen(cmd, stdout=subprocess.PIPE).communicate()[0]
-  # Strip off 7-line header and 3-line trailer from 7zip output.
-  lines = output.split('\r\n')[7:-3]
-  # Trim out just the files and their names.
+  # Remove header + footer.
+  m = re.match('.*[-]{8}[^\n]*\n(.*)\r\n[-]{8}.*', output, re.DOTALL)
+  lines = m.group(1).split('\r\n')
+  # Trim out just the files and their names (skip directories).
   files = [i[53:] for i in lines if i[20] != 'D']
   return files
 
